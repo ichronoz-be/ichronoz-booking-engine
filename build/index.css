@@ -1,0 +1,345 @@
+/* Bootstrap CSS variable overrides (customize theme here) */
+.ichronoz {
+  /* Brand colors */
+  --bs-primary: #0d6efd;
+  --bs-secondary: #6c757d;
+  --bs-success: #198754;
+  --bs-info: #0dcaf0;
+  --bs-warning: #ffc107;
+  --bs-danger: #dc3545;
+  --bs-light: #f8f9fa;
+  --bs-dark: #212529;
+
+  /* Global border radii */
+  --bs-border-radius: 0.5rem;
+  --bs-border-radius-sm: 0.25rem;
+  --bs-border-radius-lg: 0.75rem;
+
+  /* Body */
+  --bs-body-bg: #ffffff;
+  --bs-body-color: #212529;
+}
+
+/* iChronoz room card hover color using WP setting */
+.ichronoz-room-card:hover {
+  background-color: var(--ichz-room-hover, #e6e6e6);
+  transition: background-color 0.15s ease-in-out;
+}
+
+/* Apply Lato font to all plugin content (exclude icon fonts) */
+.ichronoz *:not(.fa):not(.fas):not(.far):not(.fab):not(.fa-solid):not(.fa-regular):not(.fa-brands) {
+  font-family: 'Lato', sans-serif;
+}
+
+/* Ensure Bootstrap tooltips are visible with a solid background inside plugin scope */
+.ichronoz {
+  --bs-tooltip-bg: rgba(33, 37, 41, 0.95); /* near-black */
+  --bs-tooltip-color: #fff;
+}
+.ichronoz .tooltip .tooltip-inner {
+  background-color: rgba(33, 37, 41, 0.95) !important;
+  color: #fff !important;
+}
+.ichronoz .tooltip { pointer-events: none; }
+.ichronoz .tooltip.bs-tooltip-top .tooltip-arrow::before { border-top-color: rgba(33, 37, 41, 0.95) !important; }
+.ichronoz .tooltip.bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: rgba(33, 37, 41, 0.95) !important; }
+.ichronoz .tooltip.bs-tooltip-start .tooltip-arrow::before { border-left-color: rgba(33, 37, 41, 0.95) !important; }
+.ichronoz .tooltip.bs-tooltip-end .tooltip-arrow::before { border-right-color: rgba(33, 37, 41, 0.95) !important; }
+
+/* Force Lato inside common theme wrappers (override theme heading fonts) */
+.entry-content .ichronoz, .entry-content .ichronoz *:not(.fa):not(.fas):not(.far):not(.fab):not(.fa-solid):not(.fa-regular):not(.fa-brands), .ichronoz h1, .ichronoz h2, .ichronoz h3, .ichronoz h4, .ichronoz h5, .ichronoz h6 {
+  font-family: 'Lato', sans-serif !important;
+}
+
+/* Make buttons with .form-control look like inputs */
+.ichronoz button.form-control, .ichronoz .form-control[type="button"], .ichronoz .form-control[type="submit"], .ichronoz .form-control[type="reset"], .ichronoz .btn.form-control {
+  color: #666;
+  padding: .75em;
+  height: auto;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--bs-border-color);
+  border-radius: 2px;
+  background: var(--bs-body-bg);
+  box-shadow: none;
+  box-sizing: border-box;
+  transition: all .2s linear;
+}
+
+/* Bootstrap carousel controls: lower opacity on hover */
+.ichronoz .carousel-control-prev:hover, .ichronoz .carousel-control-next:hover {
+  opacity: .3;
+}
+
+.ichronoz button.form-control:hover, .ichronoz .form-control[type="button"]:hover, .ichronoz .form-control[type="submit"]:hover, .ichronoz .form-control[type="reset"]:hover, .ichronoz .btn.form-control:hover {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color, #ced4da);
+}
+
+.ichronoz button.form-control:focus, .ichronoz .form-control[type="button"]:focus, .ichronoz .form-control[type="submit"]:focus, .ichronoz .form-control[type="reset"]:focus, .ichronoz .btn.form-control:focus {
+  color: var(--bs-body-color);
+  background-color: var(--bs-body-bg);
+  border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), .5);
+  outline: 0;
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb, 13, 110, 253), .25);
+}
+
+.ichronoz button.form-control:disabled, .ichronoz .form-control[type="button"]:disabled, .ichronoz .form-control[type="submit"]:disabled, .ichronoz .form-control[type="reset"]:disabled, .ichronoz .btn.form-control:disabled {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* React Day Picker styles */
+.ichronoz .rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: #0071c2;
+  --rdp-background-color: #fde8d7;
+  --rdp-accent-color-dark: #003580;
+  --rdp-background-color-dark: #1a1a1a;
+  --rdp-outline: 2px solid var(--rdp-accent-color);
+  --rdp-outline-selected: 2px solid rgba(0, 0, 0, 0.75);
+  margin: 1em 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+}
+
+.ichronoz .rdp-months {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  min-width: 650px;
+}
+
+.ichronoz .rdp-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e6e6e6;
+  margin-bottom: 0.5rem;
+}
+
+.ichronoz .rdp-caption_label {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.ichronoz .rdp-nav_button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.ichronoz .rdp-nav_button:hover {
+  background-color: #f2f2f2;
+}
+
+.ichronoz .rdp-head_cell {
+  font-size: 0.875rem;
+  color: #333;
+  font-weight: 700;
+  padding: 0.5em;
+  text-align: center;
+}
+
+.ichronoz .rdp-button {
+  border: 2px solid transparent;
+  border-radius: 100%;
+  height: var(--rdp-cell-size);
+  width: var(--rdp-cell-size);
+  padding: 0.25em;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.ichronoz .rdp-button:not([disabled]) {
+  cursor: pointer;
+}
+
+.ichronoz .rdp-button:focus-visible:not([disabled]) {
+  outline: var(--rdp-outline);
+  outline-offset: 2px;
+}
+
+.ichronoz .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: #f0f0f0;
+}
+
+.ichronoz .rdp-day_today:not(.rdp-day_outside) {
+  font-weight: bold;
+  color: var(--rdp-accent-color);
+}
+
+.ichronoz .rdp-day_selected, .ichronoz .rdp-day_selected:focus-visible, .ichronoz .rdp-day_selected:hover {
+  background-color: var(--rdp-accent-color);
+  color: white;
+}
+
+.ichronoz .rdp-day_outside {
+  opacity: 0.5;
+}
+
+.ichronoz .rdp-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.ichronoz .rdp-cell {
+  padding: 0;
+  text-align: center;
+}
+
+.ichronoz .rdp-button {
+  border: 2px solid transparent;
+  border-radius: 100%;
+  height: var(--rdp-cell-size);
+  width: var(--rdp-cell-size);
+  padding: 0.25em;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.ichronoz .rdp-button:not([disabled]) {
+  cursor: pointer;
+}
+
+.ichronoz .rdp-button:focus-visible:not([disabled]) {
+  outline: var(--rdp-outline);
+  outline-offset: 2px;
+}
+
+.ichronoz .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: #f0f0f0;
+}
+
+.ichronoz .rdp-day_today:not(.rdp-day_outside) {
+  font-weight: bold;
+  color: var(--rdp-accent-color);
+}
+
+.ichronoz .rdp-day_selected, .ichronoz .rdp-day_selected:focus-visible, .ichronoz .rdp-day_selected:hover {
+  background-color: var(--rdp-accent-color);
+  color: white;
+}
+
+.ichronoz .rdp-day_outside {
+  opacity: 0.5;
+}
+
+.ichronoz .rdp-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.5em;
+}
+
+.ichronoz .rdp-caption_label {
+  font-weight: 500;
+  font-size: 1.1em;
+}
+
+.ichronoz .rdp-nav {
+  display: flex;
+  gap: 0.5em;
+}
+
+.ichronoz .rdp-nav_button {
+  padding: 0.25em;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ichronoz .rdp-nav_button:hover:not([disabled]) {
+  background-color: #f0f0f0;
+}
+
+.ichronoz .rdp-head_cell {
+  font-size: 0.75em;
+  font-weight: 700;
+  padding: 0.5em;
+  text-align: center;
+}
+
+.ichronoz .rdp-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.ichronoz .rdp-cell {
+  padding: 0;
+  text-align: center;
+}
+
+.ichronoz .rdp-today .rdp-day_button {
+    border: var(--rdp-selected-border);
+    border-radius: var(--rdp-day_button-border-radius);
+}
+
+@media (max-width: 768px) {
+    .ichronoz .rdp-months {
+        min-width: auto;
+    }
+}
+
+.ichronoz .my-weekend {
+    background-color: #f5f5f5;
+}
+
+.ichronoz .rdp-months td, .ichronoz .rdp-months th {
+  padding: 0px;
+}
+
+.ichronoz .btn {
+  border-radius: 0;
+}
+
+.ichronoz .form-search-field {
+  color: #666;
+  padding: .75em;
+  height: auto;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--bs-border-color);
+  border-radius: 2px;
+  background: var(--bs-body-bg);
+  box-shadow: none;
+  box-sizing: border-box;
+  transition: all .2s linear;
+}
+
+.ichronoz .bg-gray {
+  background-color: #e4e4e4;
+}
+
+.ichronoz .shadow-right {
+  box-shadow: 5px 0 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+.ichronoz .row>* {
+  margin-top: 0px;
+}
+
+/* Apply Lato font to all plugin content (exclude icon fonts) */
+.ichronoz {
+  font-size: 0.857rem;
+}
+
+/* Tweak Bootstrap .small inside plugin scope */
+.ichronoz .small {
+  font-size: 0.80rem !important;
+}
