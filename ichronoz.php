@@ -268,6 +268,21 @@ function ichronoz_settings_page() {
             <a href="?page=ichronoz&tab=ui" class="nav-tab <?php echo $active_tab === 'ui' ? 'nav-tab-active' : ''; ?>">UI Settings</a>
             <a href="?page=ichronoz&tab=scripts" class="nav-tab <?php echo $active_tab === 'scripts' ? 'nav-tab-active' : ''; ?>">Scripts</a>
         </h2>
+        <?php
+        // Handle self-update action
+        if (isset($_POST['ichronoz_do_self_update'])) {
+            if (!current_user_can('manage_options')) {
+                wp_die('Insufficient permissions');
+            }
+            check_admin_referer('ichronoz_self_update');
+            $result = ichronoz_handle_github_update();
+            if (is_wp_error($result)) {
+                echo '<div class="notice notice-error"><p>Update failed: ' . esc_html($result->get_error_message()) . '</p></div>';
+            } else {
+                echo '<div class="notice notice-success"><p>Plugin updated to the latest release.</p></div>';
+            }
+        }
+        ?>
         <form method="post" action="options.php">
             <?php
                 settings_fields('ichronoz_options_group');
@@ -531,6 +546,14 @@ function ichronoz_settings_page() {
             <?php endif; ?>
             <?php submit_button(); ?>
         </form>
+        <hr />
+        <h2>Maintenance</h2>
+        <form method="post">
+            <?php wp_nonce_field('ichronoz_self_update'); ?>
+            <p class="description">Download and install the latest release update.</p>
+            <input type="hidden" name="ichronoz_do_self_update" value="1" />
+            <?php submit_button('Update', 'secondary'); ?>
+        </form>
     </div>
     <?php
 }
@@ -550,6 +573,81 @@ function ichronoz_add_settings_page() {
 add_shortcode('ichronoz_search_form', 'ichronoz_shortcode');
 add_action('admin_init', 'ichronoz_register_settings');
 add_action('admin_menu', 'ichronoz_add_settings_page');
+
+// --- GitHub self-updater ---
+function ichronoz_handle_github_update() {
+    // Configure your repository
+    $owner = 'ichronoz-be';
+    $repo  = 'ichronoz-booking-engine';
+
+    if (!class_exists('Plugin_Upgrader')) {
+        require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/misc.php';
+    }
+
+    // Fetch latest release metadata
+    $api_url = sprintf('https://api.github.com/repos/%s/%s/releases/latest', $owner, $repo);
+    $response = wp_remote_get($api_url, array(
+        'headers' => array('Accept' => 'application/vnd.github+json', 'User-Agent' => 'WordPress; iChronoz-Updater'),
+        'timeout' => 20,
+    ));
+    if (is_wp_error($response)) return $response;
+    $code = wp_remote_retrieve_response_code($response);
+    if ($code !== 200) return new WP_Error('github_http', 'GitHub API returned HTTP ' . $code);
+    $data = json_decode(wp_remote_retrieve_body($response), true);
+    if (!$data || !is_array($data)) return new WP_Error('github_json', 'Invalid GitHub API response');
+
+    // Prefer a .zip asset; fall back to zipball_url
+    $zip_url = '';
+    if (!empty($data['assets'])) {
+        foreach ($data['assets'] as $asset) {
+            if (isset($asset['browser_download_url']) && preg_match('/\.zip$/', $asset['browser_download_url'])) {
+                $zip_url = $asset['browser_download_url'];
+                break;
+            }
+        }
+    }
+    if (!$zip_url && isset($data['zipball_url'])) {
+        $zip_url = $data['zipball_url'];
+    }
+    if (!$zip_url) return new WP_Error('no_zip', 'No downloadable ZIP found in the latest release');
+
+    // Prepare WP filesystem
+    $url = wp_nonce_url(self_admin_url('update.php?action=upgrade-plugin&plugin=ichronoz/ichronoz.php'), 'upgrade-plugin_ichronoz/ichronoz.php');
+    $creds = request_filesystem_credentials($url);
+    if (!WP_Filesystem($creds)) {
+        return new WP_Error('fs_init', 'Could not initialize filesystem');
+    }
+
+    // Run upgrade
+    $upgrader = new Plugin_Upgrader(new Automatic_Upgrader_Skin());
+    // Force install from external package
+    $result = $upgrader->install($zip_url);
+    if (is_wp_error($result)) return $result;
+    if (!$result) return new WP_Error('install_failed', 'Install failed');
+
+    // Ensure plugin remains active if it was active
+    $plugin_file = 'ichronoz/ichronoz.php';
+    $is_active = is_plugin_active($plugin_file);
+    // Find correct plugin path in case the zip has a different folder name
+    $installed = $upgrader->result;
+    if (!empty($installed['destination_name'])) {
+        $new_plugin_file = trailingslashit($installed['destination_name']) . 'ichronoz.php';
+        // Normalize to plugin base path (directory/plugin.php)
+        foreach (array($new_plugin_file, $plugin_file) as $candidate) {
+            if (file_exists(WP_PLUGIN_DIR . '/' . $candidate)) {
+                $plugin_file = $candidate;
+                break;
+            }
+        }
+    }
+    if ($is_active && file_exists(WP_PLUGIN_DIR . '/' . $plugin_file)) {
+        activate_plugin($plugin_file, '', false, true);
+    }
+    return true;
+}
 
 function ichronoz_booking_page_shortcode() {
     // Load assets only when booking shortcode is present
