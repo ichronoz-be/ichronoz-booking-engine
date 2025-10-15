@@ -2,7 +2,7 @@
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
- * Version: 3.0
+ * Version: 3.0-beta.1
  * Author: iChronoz
  */
 
@@ -655,20 +655,37 @@ function ichronoz_handle_github_update() {
     if (!$result) return new WP_Error('install_failed', 'Install failed');
 
     // Ensure plugin remains active if it was active
-    $plugin_file = 'ichronoz/ichronoz.php';
+    $slug = 'ichronoz';
+    $plugin_file = $slug . '/ichronoz.php';
     $is_active = is_plugin_active($plugin_file);
-    // Find correct plugin path in case the zip has a different folder name
+
+    // Normalize extracted folder name to the expected slug when coming from zipball/tag
     $installed = $upgrader->result;
-    if (!empty($installed['destination_name'])) {
-        $new_plugin_file = trailingslashit($installed['destination_name']) . 'ichronoz.php';
-        // Normalize to plugin base path (directory/plugin.php)
-        foreach (array($new_plugin_file, $plugin_file) as $candidate) {
-            if (file_exists(WP_PLUGIN_DIR . '/' . $candidate)) {
-                $plugin_file = $candidate;
-                break;
+    if (!empty($installed['destination']) && !empty($installed['destination_name'])) {
+        $dest_dir = untrailingslashit($installed['destination']); // absolute path to extracted folder
+        $dest_name = $installed['destination_name']; // folder name under plugins dir
+        $expected_dir = WP_PLUGIN_DIR . '/' . $slug;
+
+        // If the extracted folder isn't our slug, move/merge into expected folder
+        if (basename($dest_dir) !== $slug) {
+            global $wp_filesystem;
+            if (!is_dir($expected_dir)) {
+                // Simple rename when target doesn't exist
+                $wp_filesystem->move($dest_dir, $expected_dir, true);
+            } else {
+                // Target exists: copy contents over then remove source
+                $dirlist = $wp_filesystem->dirlist($dest_dir, false, true);
+                if (is_array($dirlist)) {
+                    foreach (array_keys($dirlist) as $entry) {
+                        $wp_filesystem->move(trailingslashit($dest_dir) . $entry, trailingslashit($expected_dir) . $entry, true);
+                    }
+                }
+                $wp_filesystem->delete($dest_dir, true);
             }
         }
     }
+
+    // Re-activate if previously active
     if ($is_active && file_exists(WP_PLUGIN_DIR . '/' . $plugin_file)) {
         activate_plugin($plugin_file, '', false, true);
     }
