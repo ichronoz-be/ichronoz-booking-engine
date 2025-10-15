@@ -550,7 +550,7 @@ function ichronoz_settings_page() {
         <h2>Maintenance</h2>
         <form method="post">
             <?php wp_nonce_field('ichronoz_self_update'); ?>
-            <p class="description">Download and install the latest release update.</p>
+            <p class="description">Download and install the latest release.</p>
             <input type="hidden" name="ichronoz_do_self_update" value="1" />
             <?php submit_button('Update', 'secondary'); ?>
         </form>
@@ -587,17 +587,43 @@ function ichronoz_handle_github_update() {
         require_once ABSPATH . 'wp-admin/includes/misc.php';
     }
 
-    // Fetch latest release metadata
-    $api_url = sprintf('https://api.github.com/repos/%s/%s/releases/latest', $owner, $repo);
-    $response = wp_remote_get($api_url, array(
+    // Helper to make GitHub requests
+    $gh_get = function($url) {
+        return wp_remote_get($url, array(
         'headers' => array('Accept' => 'application/vnd.github+json', 'User-Agent' => 'WordPress; iChronoz-Updater'),
         'timeout' => 20,
-    ));
+        ));
+    };
+
+    // Fetch latest release metadata
+    $api_url = sprintf('https://api.github.com/repos/%s/%s/releases/latest', $owner, $repo);
+    $response = $gh_get($api_url);
     if (is_wp_error($response)) return $response;
     $code = wp_remote_retrieve_response_code($response);
-    if ($code !== 200) return new WP_Error('github_http', 'GitHub API returned HTTP ' . $code);
-    $data = json_decode(wp_remote_retrieve_body($response), true);
-    if (!$data || !is_array($data)) return new WP_Error('github_json', 'Invalid GitHub API response');
+
+    $data = null;
+    if ($code === 200) {
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+        if (!$data || !is_array($data)) return new WP_Error('github_json', 'Invalid GitHub API response');
+    } elseif ($code === 404) {
+        // Fallback: fetch latest tag and use its zipball
+        $tags_url = sprintf('https://api.github.com/repos/%s/%s/tags', $owner, $repo);
+        $tags_resp = $gh_get($tags_url);
+        if (is_wp_error($tags_resp)) return $tags_resp;
+        $tags_code = wp_remote_retrieve_response_code($tags_resp);
+        if ($tags_code !== 200) return new WP_Error('github_http', 'GitHub API returned HTTP ' . $tags_code . ' for tags');
+        $tags = json_decode(wp_remote_retrieve_body($tags_resp), true);
+        if (!is_array($tags) || empty($tags)) return new WP_Error('no_tags', 'No tags found in repository');
+        // Choose the first tag (GitHub returns in descending order)
+        $first = $tags[0];
+        $data = array(
+            'tag_name' => isset($first['name']) ? $first['name'] : '',
+            'zipball_url' => sprintf('https://api.github.com/repos/%s/%s/zipball/%s', $owner, $repo, isset($first['name']) ? $first['name'] : ''),
+            'assets' => array(),
+        );
+    } else {
+        return new WP_Error('github_http', 'GitHub API returned HTTP ' . $code);
+    }
 
     // Prefer a .zip asset; fall back to zipball_url
     $zip_url = '';
