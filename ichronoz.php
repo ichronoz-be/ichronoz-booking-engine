@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
@@ -10,7 +11,8 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-function ichronoz_admin_enqueue_scripts($hook) {
+function ichronoz_admin_enqueue_scripts($hook)
+{
     // Ensure we enqueue on our plugin settings page whether it's under Settings or top-level menu
     $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
     if ($page !== 'ichronoz') {
@@ -27,7 +29,8 @@ function ichronoz_admin_enqueue_scripts($hook) {
 }
 add_action('admin_enqueue_scripts', 'ichronoz_admin_enqueue_scripts');
 
-function ichronoz_enqueue_scripts() {
+function ichronoz_enqueue_scripts()
+{
     $asset_file = include(plugin_dir_path(__FILE__) . 'build/index.asset.php');
 
     // Enqueue scoped Bootstrap CSS (prefixed under .ichronoz)
@@ -95,11 +98,11 @@ function ichronoz_enqueue_scripts() {
     $pos_bottom = (strpos($fab_position, 'bottom') !== false);
     $wrapper_pos = ($pos_right ? 'right:16px;' : 'left:16px;') . ($pos_bottom ? 'bottom:16px;' : 'top:16px;');
     $panel_pos   = ($pos_right ? 'right:16px;' : 'left:16px;') . ($pos_bottom ? 'bottom:84px;' : 'top:84px;');
-    $critical_css = 
-        '.ichronoz-fab-wrapper{position:fixed;'.$wrapper_pos.'z-index:999999}' .
+    $critical_css =
+        '.ichronoz-fab-wrapper{position:fixed;' . $wrapper_pos . 'z-index:999999}' .
         '.ichronoz-fab-button{background:' . $btn_color . ' !important;color:#fff !important;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.25);cursor:pointer;border:none !important;outline:none !important}' .
         '.ichronoz-fab-button .fa{font-size:22px}' .
-        '.ichronoz-fab-panel{position:fixed;'.$panel_pos.'z-index:999999;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:12px;width:min(92vw,360px);display:none}' .
+        '.ichronoz-fab-panel{position:fixed;' . $panel_pos . 'z-index:999999;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:12px;width:min(92vw,360px);display:none}' .
         '.ichronoz-fab-panel.open{display:block}' .
         '.ichronoz-fab-panel .ichronoz{max-height:80vh;}';
     wp_add_inline_style('ichronoz-react-app-styles', $critical_css);
@@ -194,14 +197,16 @@ function ichronoz_enqueue_scripts() {
     wp_localize_script('ichronoz-react-app', 'ichronozBookingData', $booking_data);
 }
 
-function ichronoz_shortcode() {
+function ichronoz_shortcode()
+{
     // Load assets only when shortcode is present
     ichronoz_enqueue_scripts();
     do_action('ichronoz_rendered_search_form');
     return '<div class="ichronoz"><div data-ichronoz-mount="search"></div></div>';
 }
 
-function ichronoz_register_settings() {
+function ichronoz_register_settings()
+{
     add_option('ichronoz_form_layout', 'vertical');
     add_option('ichronoz_selected_day_color', '#0071c2');
     add_option('ichronoz_search_button_color', '#007BFF');
@@ -251,17 +256,124 @@ function ichronoz_register_settings() {
     register_setting('ichronoz_options_group', 'ichronoz_hid_options_json');
 }
 
-function ichronoz_settings_page() {
-    ?>
+function ichronoz_settings_page()
+{
+?>
     <div class="wrap">
         <h1>iChronoz Settings</h1>
         <style>
-        .ichz-help{position:relative; display:inline-flex; align-items:center; vertical-align:middle; margin-left:6px; cursor:help}
-        .ichz-help .dashicons{font-size:18px; width:18px; height:18px; line-height:18px}
-        .ichz-help .ichz-tip{position:absolute; left:50%; transform:translateX(-50%); bottom:140%; white-space:normal; max-width:420px; background:#222; color:#fff; padding:10px 12px; border-radius:6px; font-size:12.5px; line-height:1.5; box-shadow:0 6px 20px rgba(0,0,0,.28); opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:99999}
-        .ichz-help:hover .ichz-tip{opacity:1}
-        .ichz-help .ichz-tip:after{content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%); border-width:7px; border-style:solid; border-color:#222 transparent transparent transparent}
+            .ichz-help {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                vertical-align: middle;
+                margin-left: 6px;
+                cursor: help
+            }
+
+            .ichz-help .dashicons {
+                font-size: 18px;
+                width: 18px;
+                height: 18px;
+                line-height: 18px
+            }
+
+            .ichz-help .ichz-tip {
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+                bottom: 140%;
+                white-space: normal;
+                max-width: 420px;
+                background: #222;
+                color: #fff;
+                padding: 10px 12px;
+                border-radius: 6px;
+                font-size: 12.5px;
+                line-height: 1.5;
+                box-shadow: 0 6px 20px rgba(0, 0, 0, .28);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity .15s ease, transform .15s ease;
+                z-index: 99999
+            }
+
+            .ichz-help:hover .ichz-tip {
+                opacity: 1
+            }
+
+            .ichz-help .ichz-tip:after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                border-width: 7px;
+                border-style: solid;
+                border-color: #222 transparent transparent transparent
+            }
         </style>
+
+        <?php
+        // Only show Maintenance if a newer version is available on GitHub
+        $owner = 'ichronoz-be';
+        $repo  = 'ichronoz-booking-engine';
+        if (!function_exists('get_plugin_data')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+        $plugin_data = get_plugin_data(__FILE__, false, false);
+        $current_version = isset($plugin_data['Version']) ? $plugin_data['Version'] : '0.0.0';
+        $has_update = false;
+        $latest_version = '';
+
+        $gh_get = function ($url) {
+            return wp_remote_get($url, array(
+                'headers' => array('Accept' => 'application/vnd.github+json', 'User-Agent' => 'WordPress; iChronoz-Updater'),
+                'timeout' => 10,
+            ));
+        };
+
+        // Try latest release
+        $resp = $gh_get(sprintf('https://api.github.com/repos/%s/%s/releases/latest', $owner, $repo));
+        if (!is_wp_error($resp)) {
+            $code = wp_remote_retrieve_response_code($resp);
+            if ($code === 200) {
+                $data = json_decode(wp_remote_retrieve_body($resp), true);
+                if (is_array($data) && !empty($data['tag_name'])) {
+                    $latest_version = ltrim($data['tag_name'], 'v');
+                }
+            } elseif ($code === 404) {
+                // Fallback to tags when no releases exist
+                $tags_resp = $gh_get(sprintf('https://api.github.com/repos/%s/%s/tags', $owner, $repo));
+                if (!is_wp_error($tags_resp) && wp_remote_retrieve_response_code($tags_resp) === 200) {
+                    $tags = json_decode(wp_remote_retrieve_body($tags_resp), true);
+                    if (is_array($tags) && !empty($tags) && !empty($tags[0]['name'])) {
+                        $latest_version = ltrim($tags[0]['name'], 'v');
+                    }
+                }
+            }
+        }
+
+        if ($latest_version) {
+            $has_update = function_exists('version_compare')
+                ? version_compare($current_version, $latest_version, '<')
+                : ($current_version !== $latest_version);
+        }
+
+        if ($has_update): ?>
+            <hr />
+            <div class="notice wpforms-notice notice-info is-dismissible wpforms-review-notice">
+                <h2>Improve your iChronoz Booking Engine Plugin</h2>
+                <p>New version available: <strong><?php echo esc_html($latest_version); ?></strong> (installed: <strong><?php echo esc_html($current_version); ?></strong>)</p>
+                <form method="post">
+                    <?php wp_nonce_field('ichronoz_self_update'); ?>
+                    <p class="description">✨ To enjoy the latest features and bug fixes, simply download and install the newest version..</p>
+                    <input type="hidden" name="ichronoz_do_self_update" value="1" />
+                    <?php submit_button('Update', 'secondary'); ?>
+                </form>
+            </div>
+        <?php endif; ?>
+
         <?php $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'general'; ?>
         <h2 class="nav-tab-wrapper">
             <a href="?page=ichronoz&tab=general" class="nav-tab <?php echo $active_tab === 'general' ? 'nav-tab-active' : ''; ?>">General</a>
@@ -285,207 +397,211 @@ function ichronoz_settings_page() {
         ?>
         <form method="post" action="options.php">
             <?php
-                settings_fields('ichronoz_options_group');
-                do_settings_sections('ichronoz_options_group');
+            settings_fields('ichronoz_options_group');
+            do_settings_sections('ichronoz_options_group');
             ?>
             <table class="form-table">
                 <?php if ($active_tab === 'general'): ?>
-                <tr valign="top">
-                    <th scope="row">Form Layout <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Choose vertical or horizontal layout for the search form.</span></span></th>
-                    <td>
-                        <select name="ichronoz_form_layout">
-                            <option value="vertical" <?php selected(get_option('ichronoz_form_layout'), 'vertical'); ?>>Vertical</option>
-                            <option value="horizontal" <?php selected(get_option('ichronoz_form_layout'), 'horizontal'); ?>>Horizontal</option>
-                        </select>
-                        <p class="description">Default: <code>vertical</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var s=this.parentNode.previousElementSibling; if(s && s.tagName==='SELECT'){ s.value='vertical'; }">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Floating Button Position <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Corner where the floating search button appears.</span></span></th>
-                    <td>
-                        <select name="ichronoz_fab_position">
-                            <?php $fab_pos = get_option('ichronoz_fab_position', 'bottom-right'); ?>
-                            <option value="bottom-right" <?php selected($fab_pos, 'bottom-right'); ?>>Bottom Right</option>
-                            <option value="bottom-left" <?php selected($fab_pos, 'bottom-left'); ?>>Bottom Left</option>
-                            <option value="top-right" <?php selected($fab_pos, 'top-right'); ?>>Top Right</option>
-                            <option value="top-left" <?php selected($fab_pos, 'top-left'); ?>>Top Left</option>
-                        </select>
-                        <p class="description">Sets the floating search button corner. Default: <code>bottom-right</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var s=this.parentNode.previousElementSibling; if(s && s.tagName==='SELECT'){ s.value='bottom-right'; }">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">API Key <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Get API key from iChronoz dashboard.</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_api_value" value="<?php echo esc_attr(get_option('ichronoz_api_value', 'xxxxx')); ?>" class="regular-text" />
-                        <p class="description">Example: <code>xxxxx</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; if(i){ i.value='xxxxx'; }">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Booking Page Path <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Relative path to the booking page (e.g., /index.php/book).</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_booking_path" value="<?php echo esc_attr(get_option('ichronoz_booking_path', '/index.php/book')); ?>" class="regular-text" />
-                        <p class="description">Relative path for the booking page (e.g., /index.php/book or /book). Default: <code>/index.php/book</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; if(i){ i.value='/index.php/book'; }">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Loading Message (Booking Page) <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Shown while searching on booking page. Supports {fromLong}/{toShort} placeholders.</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_loading_message" value="<?php echo esc_attr(get_option('ichronoz_loading_message', 'Searching for the best rate within your requested period: {fromLong} - {toShort}')); ?>" class="regular-text" />
-                        <p class="description">Use placeholders: {fromLong}, {fromShort}, {toLong}, {toShort}. Default:
-                            <code>Searching for the best rate within your requested period: {fromLong} - {toShort}</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; if(i){ i.value='Searching for the best rate within your requested period: {fromLong} - {toShort}'; }">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Loading Spinner URL <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">URL to a loading indicator image shown during search.</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_spinner_url" value="<?php echo esc_attr(get_option('ichronoz_spinner_url', '/wp-admin/images/spinner.gif')); ?>" class="regular-text" />
-                        <p class="description">Absolute or site-relative URL to a loading indicator image. Default: <code>/wp-admin/images/spinner.gif</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; if(i){ i.value='/wp-admin/images/spinner.gif'; }">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Is Multiproperty?
-                        <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
-                            <span class="ichz-tip">Enables property selection in the search form. Configure options below as JSON.</span>
-                        </span>
-                    </th>
-                    <td>
-                        <label style="display:inline-flex; align-items:center; gap:8px;">
-                            <input type="checkbox" name="ichronoz_hid_enabled" value="1" <?php checked(get_option('ichronoz_hid_enabled', '0'), '1'); ?> />
-                            <span>Show HID select in search form</span>
-                        </label>
-                        <p class="description">When enabled, users can select a property (HID) before choosing dates.</p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">HID Options (JSON)
-                        <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
-                            <span class="ichz-tip">Provide an array of {hid, name} objects. Example: <code>[{&quot;hid&quot;:&quot;123&quot;,&quot;name&quot;:&quot;Main Hotel&quot;},{&quot;hid&quot;:&quot;456&quot;,&quot;name&quot;:&quot;Beach Villas&quot;}]</code></span>
-                        </span>
-                    </th>
-                    <td>
-                        <textarea name="ichronoz_hid_options_json" rows="5" class="large-text code" placeholder='[{"hid":"123","name":"Main Hotel"},{"hid":"456","name":"Beach Villas"}]'><?php echo esc_textarea(get_option('ichronoz_hid_options_json', '[]')); ?></textarea>
-                        <p class="description">Each entry must include both <code>hid</code> and <code>name</code>. Example: <code>[{&quot;hid&quot;:&quot;123&quot;,&quot;name&quot;:&quot;Main Hotel&quot;},{&quot;hid&quot;:&quot;456&quot;,&quot;name&quot;:&quot;Beach Villas&quot;}]</code></p>
-                    </td>
-                </tr>
-                <?php elseif ($active_tab === 'ui'): // UI Settings tab ?>
-                <tr valign="top">
-                    <th scope="row">Selected Day Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Accent color for selected days in the calendar.</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_selected_day_color" value="<?php echo esc_attr(get_option('ichronoz_selected_day_color')); ?>" class="color-picker" />
-                        <p class="description">Default: <code>#0071c2</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#0071c2'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#0071c2');">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Search Button Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Fill color of the floating search button.</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_search_button_color" value="<?php echo esc_attr(get_option('ichronoz_search_button_color')); ?>" class="color-picker" />
-                        <p class="description">Default: <code>#007BFF</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#007BFF'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#007BFF');">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Secondary Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Secondary UI accents (muted elements and borders).</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_secondary_color" value="<?php echo esc_attr(get_option('ichronoz_secondary_color', '#6c757d')); ?>" class="color-picker" />
-                        <p class="description">Default: <code>#6c757d</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#6c757d'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#6c757d');">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Success Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Positive states (e.g., success messages).</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_success_color" value="<?php echo esc_attr(get_option('ichronoz_success_color', '#198754')); ?>" class="color-picker" />
-                        <p class="description">Default: <code>#198754</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#198754'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#198754');">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Warning Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Warnings and non-blocking alerts.</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_warning_color" value="<?php echo esc_attr(get_option('ichronoz_warning_color', '#ffc107')); ?>" class="color-picker" />
-                        <p class="description">Default: <code>#ffc107</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#ffc107'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#ffc107');">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Link Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Overrides link color. Leave empty to inherit theme.</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_link_color" value="<?php echo esc_attr(get_option('ichronoz_link_color', '')); ?>" class="color-picker" />
-                        <p class="description">Default: inherit theme (empty)
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value=''; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '');">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Room Hover Background Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Background color when hovering room cards.</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_room_hover_bg_color" value="<?php echo esc_attr(get_option('ichronoz_room_hover_bg_color', '#e6e6e6')); ?>" class="color-picker" />
-                        <p class="description">Default: <code>#e6e6e6</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#e6e6e6'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#e6e6e6');">Reset</a>
-                        </p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Calendar Range Background <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Background for the selected date range.</span></span></th>
-                    <td>
-                        <input type="text" name="ichronoz_calendar_range_bg" value="<?php echo esc_attr(get_option('ichronoz_calendar_range_bg', '#e3f2ff')); ?>" class="color-picker" />
-                        <p class="description">Background color for the selected date range in calendar fallback. Default: <code>#e3f2ff</code>
-                            <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#e3f2ff'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#e3f2ff');">Reset</a>
-                        </p>
-                    </td>
-                </tr>
+                    <tr valign="top">
+                        <th scope="row">Form Layout <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Choose vertical or horizontal layout for the search form.</span></span></th>
+                        <td>
+                            <select name="ichronoz_form_layout">
+                                <option value="vertical" <?php selected(get_option('ichronoz_form_layout'), 'vertical'); ?>>Vertical</option>
+                                <option value="horizontal" <?php selected(get_option('ichronoz_form_layout'), 'horizontal'); ?>>Horizontal</option>
+                            </select>
+                            <p class="description">Default: <code>vertical</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var s=this.parentNode.previousElementSibling; if(s && s.tagName==='SELECT'){ s.value='vertical'; }">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Floating Button Position <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Corner where the floating search button appears.</span></span></th>
+                        <td>
+                            <select name="ichronoz_fab_position">
+                                <?php $fab_pos = get_option('ichronoz_fab_position', 'bottom-right'); ?>
+                                <option value="bottom-right" <?php selected($fab_pos, 'bottom-right'); ?>>Bottom Right</option>
+                                <option value="bottom-left" <?php selected($fab_pos, 'bottom-left'); ?>>Bottom Left</option>
+                                <option value="top-right" <?php selected($fab_pos, 'top-right'); ?>>Top Right</option>
+                                <option value="top-left" <?php selected($fab_pos, 'top-left'); ?>>Top Left</option>
+                            </select>
+                            <p class="description">Sets the floating search button corner. Default: <code>bottom-right</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var s=this.parentNode.previousElementSibling; if(s && s.tagName==='SELECT'){ s.value='bottom-right'; }">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">API Key <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Get API key from iChronoz dashboard.</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_api_value" value="<?php echo esc_attr(get_option('ichronoz_api_value', 'xxxxx')); ?>" class="regular-text" />
+                            <p class="description">Example: <code>xxxxx</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; if(i){ i.value='xxxxx'; }">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Booking Page Path <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Relative path to the booking page (e.g., /index.php/book).</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_booking_path" value="<?php echo esc_attr(get_option('ichronoz_booking_path', '/index.php/book')); ?>" class="regular-text" />
+                            <p class="description">Relative path for the booking page (e.g., /index.php/book or /book). Default: <code>/index.php/book</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; if(i){ i.value='/index.php/book'; }">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Loading Message (Booking Page) <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Shown while searching on booking page. Supports {fromLong}/{toShort} placeholders.</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_loading_message" value="<?php echo esc_attr(get_option('ichronoz_loading_message', 'Searching for the best rate within your requested period: {fromLong} - {toShort}')); ?>" class="regular-text" />
+                            <p class="description">Use placeholders: {fromLong}, {fromShort}, {toLong}, {toShort}. Default:
+                                <code>Searching for the best rate within your requested period: {fromLong} - {toShort}</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; if(i){ i.value='Searching for the best rate within your requested period: {fromLong} - {toShort}'; }">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Loading Spinner URL <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">URL to a loading indicator image shown during search.</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_spinner_url" value="<?php echo esc_attr(get_option('ichronoz_spinner_url', '/wp-admin/images/spinner.gif')); ?>" class="regular-text" />
+                            <p class="description">Absolute or site-relative URL to a loading indicator image. Default: <code>/wp-admin/images/spinner.gif</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; if(i){ i.value='/wp-admin/images/spinner.gif'; }">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Is Multiproperty?
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Enables property selection in the search form. Configure options below as JSON.</span>
+                            </span>
+                        </th>
+                        <td>
+                            <label style="display:inline-flex; align-items:center; gap:8px;">
+                                <input type="checkbox" name="ichronoz_hid_enabled" value="1" <?php checked(get_option('ichronoz_hid_enabled', '0'), '1'); ?> />
+                                <span>Show HID select in search form</span>
+                            </label>
+                            <p class="description">When enabled, users can select a property (HID) before choosing dates.</p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">HID Options (JSON)
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Provide an array of {hid, name} objects. Example: <code>[{&quot;hid&quot;:&quot;123&quot;,&quot;name&quot;:&quot;Main Hotel&quot;},{&quot;hid&quot;:&quot;456&quot;,&quot;name&quot;:&quot;Beach Villas&quot;}]</code></span>
+                            </span>
+                        </th>
+                        <td>
+                            <textarea name="ichronoz_hid_options_json" rows="5" class="large-text code" placeholder='[{"hid":"123","name":"Main Hotel"},{"hid":"456","name":"Beach Villas"}]'><?php echo esc_textarea(get_option('ichronoz_hid_options_json', '[]')); ?></textarea>
+                            <p class="description">Each entry must include both <code>hid</code> and <code>name</code>. Example: <code>[{&quot;hid&quot;:&quot;123&quot;,&quot;name&quot;:&quot;Main Hotel&quot;},{&quot;hid&quot;:&quot;456&quot;,&quot;name&quot;:&quot;Beach Villas&quot;}]</code></p>
+                        </td>
+                    </tr>
+                <?php elseif ($active_tab === 'ui'): // UI Settings tab 
+                ?>
+                    <tr valign="top">
+                        <th scope="row">Selected Day Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Accent color for selected days in the calendar.</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_selected_day_color" value="<?php echo esc_attr(get_option('ichronoz_selected_day_color')); ?>" class="color-picker" />
+                            <p class="description">Default: <code>#0071c2</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#0071c2'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#0071c2');">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Search Button Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Fill color of the floating search button.</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_search_button_color" value="<?php echo esc_attr(get_option('ichronoz_search_button_color')); ?>" class="color-picker" />
+                            <p class="description">Default: <code>#007BFF</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#007BFF'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#007BFF');">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Secondary Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Secondary UI accents (muted elements and borders).</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_secondary_color" value="<?php echo esc_attr(get_option('ichronoz_secondary_color', '#6c757d')); ?>" class="color-picker" />
+                            <p class="description">Default: <code>#6c757d</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#6c757d'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#6c757d');">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Success Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Positive states (e.g., success messages).</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_success_color" value="<?php echo esc_attr(get_option('ichronoz_success_color', '#198754')); ?>" class="color-picker" />
+                            <p class="description">Default: <code>#198754</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#198754'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#198754');">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Warning Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Warnings and non-blocking alerts.</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_warning_color" value="<?php echo esc_attr(get_option('ichronoz_warning_color', '#ffc107')); ?>" class="color-picker" />
+                            <p class="description">Default: <code>#ffc107</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#ffc107'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#ffc107');">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Link Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Overrides link color. Leave empty to inherit theme.</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_link_color" value="<?php echo esc_attr(get_option('ichronoz_link_color', '')); ?>" class="color-picker" />
+                            <p class="description">Default: inherit theme (empty)
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value=''; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '');">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Room Hover Background Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Background color when hovering room cards.</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_room_hover_bg_color" value="<?php echo esc_attr(get_option('ichronoz_room_hover_bg_color', '#e6e6e6')); ?>" class="color-picker" />
+                            <p class="description">Default: <code>#e6e6e6</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#e6e6e6'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#e6e6e6');">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Calendar Range Background <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Background for the selected date range.</span></span></th>
+                        <td>
+                            <input type="text" name="ichronoz_calendar_range_bg" value="<?php echo esc_attr(get_option('ichronoz_calendar_range_bg', '#e3f2ff')); ?>" class="color-picker" />
+                            <p class="description">Background color for the selected date range in calendar fallback. Default: <code>#e3f2ff</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; i.value='#e3f2ff'; if (jQuery && jQuery(i).wpColorPicker) jQuery(i).wpColorPicker('color', '#e3f2ff');">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
                 <?php endif; ?>
             </table>
             <?php if ($active_tab === 'ui'): ?>
-            <p>
-                <button type="button" class="button" id="ichz-reset-all-ui-colors">Reset All UI Colors</button>
-            </p>
-            <script>
-            (function(){
-                document.addEventListener('DOMContentLoaded', function(){
-                    var btn = document.getElementById('ichz-reset-all-ui-colors');
-                    if(!btn) return;
-                    btn.addEventListener('click', function(){
-                        if (!confirm('Reset all UI colors to defaults?')) return;
-                        var defaults = {
-                            ichronoz_selected_day_color: '#0071c2',
-                            ichronoz_search_button_color: '#007BFF',
-                            ichronoz_secondary_color: '#6c757d',
-                            ichronoz_success_color: '#198754',
-                            ichronoz_warning_color: '#ffc107',
-                            ichronoz_link_color: '',
-                            ichronoz_room_hover_bg_color: '#e6e6e6',
-                            ichronoz_calendar_range_bg: '#e3f2ff'
-                        };
-                        Object.keys(defaults).forEach(function(key){
-                            var inp = document.querySelector('input[name="'+key+'"]');
-                            if(!inp) return;
-                            inp.value = defaults[key];
-                            try { if (window.jQuery && jQuery(inp).wpColorPicker) jQuery(inp).wpColorPicker('color', defaults[key]); } catch(e){}
+                <p>
+                    <button type="button" class="button" id="ichz-reset-all-ui-colors">Reset All UI Colors</button>
+                </p>
+                <script>
+                    (function() {
+                        document.addEventListener('DOMContentLoaded', function() {
+                            var btn = document.getElementById('ichz-reset-all-ui-colors');
+                            if (!btn) return;
+                            btn.addEventListener('click', function() {
+                                if (!confirm('Reset all UI colors to defaults?')) return;
+                                var defaults = {
+                                    ichronoz_selected_day_color: '#0071c2',
+                                    ichronoz_search_button_color: '#007BFF',
+                                    ichronoz_secondary_color: '#6c757d',
+                                    ichronoz_success_color: '#198754',
+                                    ichronoz_warning_color: '#ffc107',
+                                    ichronoz_link_color: '',
+                                    ichronoz_room_hover_bg_color: '#e6e6e6',
+                                    ichronoz_calendar_range_bg: '#e3f2ff'
+                                };
+                                Object.keys(defaults).forEach(function(key) {
+                                    var inp = document.querySelector('input[name="' + key + '"]');
+                                    if (!inp) return;
+                                    inp.value = defaults[key];
+                                    try {
+                                        if (window.jQuery && jQuery(inp).wpColorPicker) jQuery(inp).wpColorPicker('color', defaults[key]);
+                                    } catch (e) {}
+                                });
+                            });
                         });
-                    });
-                });
-            })();
-            </script>
-            <?php elseif ($active_tab === 'scripts'): // Scripts injection tab ?>
+                    })();
+                </script>
+            <?php elseif ($active_tab === 'scripts'): // Scripts injection tab 
+            ?>
                 <tr valign="top">
                     <th scope="row">Booking Page Script
                         <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
@@ -546,19 +662,13 @@ function ichronoz_settings_page() {
             <?php endif; ?>
             <?php submit_button(); ?>
         </form>
-        <hr />
-        <h2>Maintenance</h2>
-        <form method="post">
-            <?php wp_nonce_field('ichronoz_self_update'); ?>
-            <p class="description">Download and install the latest release.</p>
-            <input type="hidden" name="ichronoz_do_self_update" value="1" />
-            <?php submit_button('Update', 'secondary'); ?>
-        </form>
+
     </div>
-    <?php
+<?php
 }
 
-function ichronoz_add_settings_page() {
+function ichronoz_add_settings_page()
+{
     add_menu_page(
         'iChronoz Settings',       // Page title
         'iChronoz',                // Menu title
@@ -575,7 +685,8 @@ add_action('admin_init', 'ichronoz_register_settings');
 add_action('admin_menu', 'ichronoz_add_settings_page');
 
 // --- GitHub self-updater ---
-function ichronoz_handle_github_update() {
+function ichronoz_handle_github_update()
+{
     // Configure your repository
     $owner = 'ichronoz-be';
     $repo  = 'ichronoz-booking-engine';
@@ -588,10 +699,10 @@ function ichronoz_handle_github_update() {
     }
 
     // Helper to make GitHub requests
-    $gh_get = function($url) {
+    $gh_get = function ($url) {
         return wp_remote_get($url, array(
-        'headers' => array('Accept' => 'application/vnd.github+json', 'User-Agent' => 'WordPress; iChronoz-Updater'),
-        'timeout' => 20,
+            'headers' => array('Accept' => 'application/vnd.github+json', 'User-Agent' => 'WordPress; iChronoz-Updater'),
+            'timeout' => 20,
         ));
     };
 
@@ -692,7 +803,8 @@ function ichronoz_handle_github_update() {
     return true;
 }
 
-function ichronoz_booking_page_shortcode() {
+function ichronoz_booking_page_shortcode()
+{
     // Load assets only when booking shortcode is present
     ichronoz_enqueue_scripts();
     do_action('ichronoz_rendered_booking_page');
@@ -704,12 +816,13 @@ add_shortcode('ichronoz_booking_page', 'ichronoz_booking_page_shortcode');
  * Shortcode: [ichronoz_search_button]
  * Renders a floating button at bottom-right that toggles the vertical search form.
  */
-function ichronoz_search_button_shortcode() {
+function ichronoz_search_button_shortcode()
+{
     // Ensure required assets are loaded
     ichronoz_enqueue_scripts();
 
     ob_start();
-    ?>
+?>
     <?php $fab_position = get_option('ichronoz_fab_position', 'bottom-right'); ?>
     <div class="ichronoz-fab-wrapper" data-fab-position="<?php echo esc_attr($fab_position); ?>">
         <button type="button" class="ichronoz-fab-button" aria-expanded="false" aria-controls="ichronoz-fab-panel">
@@ -717,21 +830,23 @@ function ichronoz_search_button_shortcode() {
         </button>
     </div>
     <div id="ichronoz-fab-panel" class="ichronoz-fab-panel" aria-hidden="true">
-        <div class="ichronoz"><div data-ichronoz-mount="search"></div></div>
+        <div class="ichronoz">
+            <div data-ichronoz-mount="search"></div>
+        </div>
     </div>
     <script>
-        (function(){
+        (function() {
             var btn = document.querySelector('.ichronoz-fab-button');
             var panel = document.getElementById('ichronoz-fab-panel');
-            if(!btn || !panel) return;
-            btn.addEventListener('click', function(){
+            if (!btn || !panel) return;
+            btn.addEventListener('click', function() {
                 var isOpen = panel.classList.toggle('open');
                 btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
                 panel.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
             });
         })();
     </script>
-    <?php
+<?php
     return ob_get_clean();
 }
 add_shortcode('ichronoz_search_button', 'ichronoz_search_button_shortcode');
