@@ -4,6 +4,15 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.0-beta.3] - 2025-10-23
+
+### Added
+- New selection for multiple room list view
+- Button round customable
+- Gradient color customable for header
+
+### Fixed
+- Fixed extend night bug
 
 ## [3.0-beta.2] - 2025-10-16
 - Added color picker for UI colors.

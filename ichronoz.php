@@ -3,7 +3,7 @@
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
- * Version: 3.0-beta.2
+ * Version: 3.0-beta.3
  * Author: iChronoz
  */
 
@@ -123,6 +123,13 @@ function ichronoz_enqueue_scripts()
     );
 
     $layout_option = get_option('ichronoz_form_layout', 'vertical');
+    // New: button rounding options
+    $btn_round_enabled = get_option('ichronoz_btn_rounded', '0') === '1';
+    $btn_radius = trim((string) get_option('ichronoz_btn_radius', '6px'));
+    if ($btn_round_enabled && $btn_radius !== '') {
+        $critical_css_extra = '.ichronoz .btn{border-radius:' . esc_attr($btn_radius) . ' !important;}';
+        wp_add_inline_style('ichronoz-react-app-styles', $critical_css_extra);
+    }
     $selected_day_color = get_option('ichronoz_selected_day_color', '#0071c2');
     $search_button_color = get_option('ichronoz_search_button_color', '#007BFF');
     $room_hover_bg_color = get_option('ichronoz_room_hover_bg_color', '#e6e6e6');
@@ -168,12 +175,34 @@ function ichronoz_enqueue_scripts()
         $detail_script  = wp_kses_post($detail_script);
     }
 
+    // Gradient colors (4 colors) setting
+    $gradient_colors_raw = get_option('ichronoz_gradient_colors', '');
+    $gradient_colors = array();
+    if (is_array($gradient_colors_raw)) {
+        $gradient_colors = array_values(array_filter(array_map('sanitize_text_field', $gradient_colors_raw)));
+    } elseif (is_string($gradient_colors_raw)) {
+        $parts = preg_split('/[\s,]+/', $gradient_colors_raw);
+        if (is_array($parts)) {
+            foreach ($parts as $p) {
+                $p = trim($p);
+                if ($p !== '') $gradient_colors[] = sanitize_text_field($p);
+            }
+        }
+    }
+    if (count($gradient_colors) < 4) {
+        // leave empty; frontend will fallback to other colors
+        $gradient_colors = $gradient_colors; // no-op, explicit for clarity
+    } else {
+        $gradient_colors = array_slice($gradient_colors, 0, 4);
+    }
+
     wp_localize_script('ichronoz-react-app', 'ichronozSettings', array(
         'apiBase' => 'https://api.ichronoz.net',
         'layout' => $layout_option,
         'selectedDayColor' => $selected_day_color,
         'searchButtonColor' => $search_button_color,
         'roomHoverBgColor' => $room_hover_bg_color,
+        'roomCardType' => get_option('ichronoz_room_card_type', 'default'),
         'secondaryColor' => $secondary_color,
         'successColor' => $success_color,
         'warningColor' => $warning_color,
@@ -189,6 +218,7 @@ function ichronoz_enqueue_scripts()
         'scriptNonce' => $csp_nonce,
         'hidEnabled' => $hid_enabled,
         'hidOptions' => $hid_options,
+        'gradientColors' => $gradient_colors,
     ));
 
     $booking_data = array(
@@ -225,6 +255,8 @@ function ichronoz_register_settings()
     add_option('ichronoz_spinner_url', '/wp-admin/images/spinner.gif');
     add_option('ichronoz_calendar_range_bg', '#e3f2ff');
     add_option('ichronoz_fab_position', 'bottom-right');
+    // Gradient colors (4 colors) string or array-compatible storage
+    add_option('ichronoz_gradient_colors', '');
     // Script injection options
     add_option('ichronoz_booking_script', '');
     add_option('ichronoz_detail_script', '');
@@ -235,6 +267,8 @@ function ichronoz_register_settings()
     // HID selector options
     add_option('ichronoz_hid_enabled', '0');
     add_option('ichronoz_hid_options_json', '[]');
+    // Room card type (default | room)
+    add_option('ichronoz_room_card_type', 'default');
     // Split settings into per-tab groups to prevent cross-tab resets
     // General group
     register_setting('ichronoz_general_group', 'ichronoz_form_layout');
@@ -245,6 +279,7 @@ function ichronoz_register_settings()
     register_setting('ichronoz_general_group', 'ichronoz_fab_position');
     register_setting('ichronoz_general_group', 'ichronoz_hid_enabled');
     register_setting('ichronoz_general_group', 'ichronoz_hid_options_json');
+    register_setting('ichronoz_general_group', 'ichronoz_room_card_type');
 
     // UI group
     register_setting('ichronoz_ui_group', 'ichronoz_selected_day_color');
@@ -255,6 +290,10 @@ function ichronoz_register_settings()
     register_setting('ichronoz_ui_group', 'ichronoz_warning_color');
     register_setting('ichronoz_ui_group', 'ichronoz_link_color');
     register_setting('ichronoz_ui_group', 'ichronoz_calendar_range_bg');
+    register_setting('ichronoz_ui_group', 'ichronoz_gradient_colors');
+    // New UI options for button rounding
+    register_setting('ichronoz_ui_group', 'ichronoz_btn_rounded');
+    register_setting('ichronoz_ui_group', 'ichronoz_btn_radius');
 
     // Scripts group
     register_setting('ichronoz_scripts_group', 'ichronoz_booking_script');
@@ -433,14 +472,19 @@ function ichronoz_settings_page()
                     <?php submit_button('Update', 'secondary'); ?>
                 </form>
             </div>
-        <?php endif; ?>
+        <?php else: ?>
+            <hr />
+            <div class="notice wpforms-notice notice-info is-dismissible wpforms-review-notice">
+                <h2>Improve your iChronoz Booking Engine Plugin</h2>
+                <p>
+                    <a class="button button-small" href="<?php echo esc_url(add_query_arg(array('page' => 'ichronoz', 'ichz_force_check' => 1, '_wpnonce' => wp_create_nonce('ichz_force_check')), admin_url('admin.php'))); ?>">Check for updates now</a>
+                    <?php if (!empty($last_checked_ts)): ?>
+                        <span style="color:#646970;">Last checked: <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_checked_ts)); ?></span>
+                    <?php endif; ?>
+                </p>
 
-        <div style="margin:8px 0 4px; display:flex; align-items:center; gap:10px;">
-            <a class="button button-small" href="<?php echo esc_url(add_query_arg(array('page' => 'ichronoz', 'ichz_force_check' => 1, '_wpnonce' => wp_create_nonce('ichz_force_check')), admin_url('admin.php'))); ?>">Check for updates now</a>
-            <?php if (!empty($last_checked_ts)): ?>
-                <span style="color:#646970;">Last checked: <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_checked_ts)); ?></span>
-            <?php endif; ?>
-        </div>
+            </div>
+        <?php endif; ?>
 
         <?php $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'general'; ?>
         <h2 class="nav-tab-wrapper">
@@ -481,6 +525,23 @@ function ichronoz_settings_page()
             ?>
             <table class="form-table">
                 <?php if ($active_tab === 'general'): ?>
+                    <tr valign="top">
+                        <th scope="row">Room List View
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Choose how rooms display on the booking page. Default lists every rate as a separate card. Grouped view groups by room type.</span>
+                            </span>
+                        </th>
+                        <td>
+                            <?php $room_view = get_option('ichronoz_room_card_type', 'default'); ?>
+                            <select name="ichronoz_room_card_type">
+                                <option value="default" <?php selected($room_view, 'default'); ?>>Default (flat list)</option>
+                                <option value="room" <?php selected($room_view, 'room'); ?>>Grouped by room type</option>
+                            </select>
+                            <p class="description">Default: <code>default</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var s=this.parentNode.previousElementSibling; if(s && s.tagName==='SELECT'){ s.value='default'; }">Reset</a>
+                            </p>
+                        </td>
+                    </tr>
                     <tr valign="top">
                         <th scope="row">Form Layout <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Choose vertical or horizontal layout for the search form.</span></span></th>
                         <td>
@@ -553,20 +614,20 @@ function ichronoz_settings_page()
                         </th>
                         <td>
                             <label style="display:inline-flex; align-items:center; gap:8px;">
-                                <input type="checkbox" name="ichronoz_hid_enabled" value="1" <?php checked(get_option('ichronoz_hid_enabled', '0'), '1'); ?> />
-                                <span>Show HID select in search form</span>
+                                <input id="ichronoz_hid_enabled" type="checkbox" name="ichronoz_hid_enabled" value="1" <?php checked(get_option('ichronoz_hid_enabled', '0'), '1'); ?> />
+                                <span>Show Property select in search form</span>
                             </label>
-                            <p class="description">When enabled, users can select a property (HID) before choosing dates.</p>
+                            <p class="description">When enabled, users can select a property before choosing dates.</p>
                         </td>
                     </tr>
-                    <tr valign="top">
-                        <th scope="row">HID Options (JSON)
+                    <tr valign="top" class="ichz-hid-options-row">
+                        <th scope="row">Property List Options (JSON)
                             <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
                                 <span class="ichz-tip">Provide an array of {hid, name} objects. Example: <code>[{&quot;hid&quot;:&quot;123&quot;,&quot;name&quot;:&quot;Main Hotel&quot;},{&quot;hid&quot;:&quot;456&quot;,&quot;name&quot;:&quot;Beach Villas&quot;}]</code></span>
                             </span>
                         </th>
                         <td>
-                            <textarea name="ichronoz_hid_options_json" rows="5" class="large-text code" placeholder='[{"hid":"123","name":"Main Hotel"},{"hid":"456","name":"Beach Villas"}]'><?php echo esc_textarea(get_option('ichronoz_hid_options_json', '[]')); ?></textarea>
+                            <textarea id="ichronoz_hid_options_json" name="ichronoz_hid_options_json" rows="5" class="large-text code" placeholder='[{"hid":"123","name":"Main Hotel"},{"hid":"456","name":"Beach Villas"}]'><?php echo esc_textarea(get_option('ichronoz_hid_options_json', '[]')); ?></textarea>
                             <p class="description">Each entry must include both <code>hid</code> and <code>name</code>. Example: <code>[{&quot;hid&quot;:&quot;123&quot;,&quot;name&quot;:&quot;Main Hotel&quot;},{&quot;hid&quot;:&quot;456&quot;,&quot;name&quot;:&quot;Beach Villas&quot;}]</code></p>
                         </td>
                     </tr>
@@ -661,6 +722,44 @@ function ichronoz_settings_page()
                     </tr>
                 <?php elseif ($active_tab === 'ui'): // UI Settings tab 
                 ?>
+                    <tr valign="top">
+                        <th scope="row">Round Buttons
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Apply rounded corners to all buttons inside the iChronoz UI scope (<code>.ichronoz .btn</code>).</span>
+                            </span>
+                        </th>
+                        <td>
+                            <label>
+                                <input id="ichronoz_btn_rounded" type="checkbox" name="ichronoz_btn_rounded" value="1" <?php checked(get_option('ichronoz_btn_rounded', '0'), '1'); ?> />
+                                <span>Round all</span>
+                            </label>
+                            <p class="description">Toggle rounded corners for all Bootstrap buttons rendered by the plugin.</p>
+                        </td>
+                    </tr>
+                    <tr valign="top" class="ichz-btn-radius-row">
+                        <th scope="row">Button Border Radius
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Radius value used when rounding is enabled. Accepts units like <code>px</code>, <code>rem</code>, <code>em</code>, or <code>%</code>.</span>
+                            </span>
+                        </th>
+                        <td>
+                            <input id="ichronoz_btn_radius" type="text" name="ichronoz_btn_radius" value="<?php echo esc_attr(get_option('ichronoz_btn_radius', '6px')); ?>" class="regular-text" placeholder="6px" />
+                            <p class="description">Examples: <code>6px</code>, <code>0.5rem</code>, <code>999px</code>. Default: <code>6px</code>.</p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Gradient Colors (3 colors)
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Provide three colors for the detail page gradient header. Accepts comma or space separated values, e.g. <code>#0d6efd, #6c757d, #20c997</code>. Leaves empty to fallback to other UI colors.</span>
+                            </span>
+                        </th>
+                        <td>
+                            <input type="text" name="ichronoz_gradient_colors" value="<?php echo esc_attr(get_option('ichronoz_gradient_colors', '')); ?>" class="regular-text" placeholder="#1a2f78, #1870c9, #5195e3, #FFFFFF" />
+                            <p class="description">Three colors, comma or space separated, with the last color for font color. Example: <code>#0d6efd, #6c757d, #20c997, #FFFFFF</code>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; if(i){ i.value=''; }">Clear</a>
+                            </p>
+                        </td>
+                    </tr>
                     <!-- <tr valign="top">
                         <th scope="row">Selected Day Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Accent color for selected days in the calendar.</span></span></th>
                         <td>
@@ -803,6 +902,114 @@ function ichronoz_settings_page()
             <?php endif; ?>
             <?php submit_button(); ?>
         </form>
+
+        <script>
+            (function() {
+                var cb = document.getElementById('ichronoz_btn_rounded');
+                var row = document.querySelector('.ichz-btn-radius-row');
+                var input = document.getElementById('ichronoz_btn_radius');
+                if (!cb || !row) return;
+
+                function sync() {
+                    var on = cb.checked;
+                    row.style.display = on ? '' : 'none';
+                    if (input) input.disabled = !on;
+                }
+                cb.addEventListener('change', sync);
+                sync();
+            })();
+        </script>
+
+        <script>
+            (function() {
+                var cb = document.getElementById('ichronoz_hid_enabled');
+                var row = document.querySelector('.ichz-hid-options-row');
+                var input = document.getElementById('ichronoz_hid_options_json');
+                if (!cb || !row) return;
+
+                function sync() {
+                    var on = cb.checked;
+                    row.style.display = on ? '' : 'none';
+                    if (input) input.disabled = !on;
+                }
+                cb.addEventListener('change', sync);
+                sync();
+
+                // Lightweight client-side JSON validation with inline feedback
+                if (input) {
+                    var msgId = 'ichz-hid-json-msg';
+                    var msg = document.getElementById(msgId);
+                    if (!msg) {
+                        msg = document.createElement('p');
+                        msg.id = msgId;
+                        msg.className = 'description';
+                        input.parentNode.appendChild(msg);
+                    }
+                    var isValid = true;
+
+                    function validate() {
+                        if (input.disabled) {
+                            msg.textContent = '';
+                            isValid = true;
+                            return;
+                        }
+                        var val = input.value.trim();
+                        if (!val) {
+                            msg.textContent = 'Required when multiproperty is enabled.';
+                            msg.style.color = '#b32d2e';
+                            isValid = false;
+                            return;
+                        }
+                        try {
+                            var parsed = JSON.parse(val);
+                            if (!Array.isArray(parsed)) {
+                                msg.textContent = 'JSON should be an array of {hid, name} objects.';
+                                msg.style.color = '#b32d2e';
+                                isValid = false;
+                            } else {
+                                var ok = parsed.every(function(it) {
+                                    return it && typeof it === 'object' && 'hid' in it && 'name' in it;
+                                });
+                                if (!ok) {
+                                    msg.textContent = 'Each item must include both "hid" and "name".';
+                                    msg.style.color = '#b32d2e';
+                                    isValid = false;
+                                } else {
+                                    msg.textContent = 'Looks good.';
+                                    msg.style.color = '#0a7f36';
+                                    isValid = true;
+                                }
+                            }
+                        } catch (e) {
+                            msg.textContent = 'Invalid JSON: ' + e.message;
+                            msg.style.color = '#b32d2e';
+                            isValid = false;
+                        }
+                    }
+                    input.addEventListener('input', validate);
+                    validate();
+
+                    // Prevent settings form submission when invalid
+                    var form = input.closest('form');
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            validate();
+                            if (!isValid) {
+                                e.preventDefault();
+                                input.focus();
+                                // Ensure the UI tab is active (in case)
+                                try {
+                                    window.scrollTo({
+                                        top: input.getBoundingClientRect().top + window.scrollY - 120,
+                                        behavior: 'smooth'
+                                    });
+                                } catch (_) {}
+                            }
+                        });
+                    }
+                }
+            })();
+        </script>
 
     </div>
 <?php

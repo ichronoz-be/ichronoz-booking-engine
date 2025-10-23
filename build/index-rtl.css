@@ -354,7 +354,7 @@
 
 /* Apply Lato font to all plugin content (exclude icon fonts) */
 .ichronoz {
-  font-size: 0.857rem;
+  font-size: 0.927rem;
 }
 
 /* Tweak Bootstrap .small inside plugin scope */
@@ -362,3 +362,10 @@
   font-size: 0.80rem !important;
 }
 
+.ichronoz .fs-6 {
+  font-size: 1.05rem;
+}
+
+.ichronoz .no-border {
+  border: none !important;
+}
