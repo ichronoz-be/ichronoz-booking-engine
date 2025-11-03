@@ -4,6 +4,14 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.0] - 2025-11-03
+
+### Added
+- New customizatoin for floating button
+
+### Fixed
+- Fixed total summary section
+
 ## [3.0-beta.3] - 2025-10-23
 
 ### Added

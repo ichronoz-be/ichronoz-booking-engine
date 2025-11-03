@@ -3,7 +3,7 @@
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
- * Version: 3.0-beta.3
+ * Version: 3.0
  * Author: iChronoz
  */
 
@@ -91,17 +91,22 @@ function ichronoz_enqueue_scripts()
     );
 
     // Inline critical styles for floating search button to ensure visibility
-    $btn_color = get_option('ichronoz_search_button_color', '#007BFF');
+    $btn_color = get_option('ichronoz_search_button_color', '#1566d1');
     $fab_position = get_option('ichronoz_fab_position', 'bottom-right'); // bottom-right, bottom-left, top-right, top-left
     // Compute positional CSS for wrapper and panel based on setting
     $pos_right = (strpos($fab_position, 'right') !== false);
     $pos_bottom = (strpos($fab_position, 'bottom') !== false);
     $wrapper_pos = ($pos_right ? 'right:16px;' : 'left:16px;') . ($pos_bottom ? 'bottom:16px;' : 'top:16px;');
     $panel_pos   = ($pos_right ? 'right:16px;' : 'left:16px;') . ($pos_bottom ? 'bottom:84px;' : 'top:84px;');
+    $fab_transparent = get_option('ichronoz_fab_transparent', '0') === '1';
+    $fab_border_color = get_option('ichronoz_fab_border_color', $btn_color ?: '#1566d1');
     $critical_css =
         '.ichronoz-fab-wrapper{position:fixed;' . $wrapper_pos . 'z-index:999999}' .
-        '.ichronoz-fab-button{background:' . $btn_color . ' !important;color:#fff !important;width:auto;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.25);cursor:pointer;border:none !important;outline:none !important}' .
-        '.ichronoz-fab-button .fa{font-size:22px}' .
+        ($fab_transparent
+            ? '.ichronoz-fab-button{background:transparent !important;color:' . $fab_border_color . ' !important;border:2px solid ' . $fab_border_color . ' !important}'
+              . '.ichronoz-fab-button:hover,.ichronoz-fab-button:focus{background:' . $btn_color . ' !important; box-shadow:0 0 0 3px rgba(0,0,0,0.06); color:#FFFFFF !important;}'
+            : '.ichronoz-fab-button{background:' . $btn_color . ' !important;color:#fff !important;border:none !important}'
+              . '.ichronoz-fab-button:hover,.ichronoz-fab-button:focus{filter:brightness(0.95);}') .
         '.ichronoz-fab-panel{position:fixed;' . $panel_pos . 'z-index:999999;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:12px;width:min(92vw,360px);display:none}' .
         '.ichronoz-fab-panel.open{display:block}' .
         '.ichronoz-fab-panel .ichronoz{max-height:80vh;}' .
@@ -110,6 +115,16 @@ function ichronoz_enqueue_scripts()
         '.ichronoz .rdp-day_range_start .rdp-day_button,' .
         '.ichronoz .rdp-day_range_end .rdp-day_button{color:#111 !important;}';
     wp_add_inline_style('ichronoz-react-app-styles', $critical_css);
+
+    // Enqueue Custom CSS from settings (placed after all plugin styles)
+    $custom_css_raw = get_option('ichronoz_custom_css', '');
+    if (is_string($custom_css_raw) && trim($custom_css_raw) !== '') {
+        // Light sanitization: strip any HTML tags, keep pure CSS text
+        $custom_css = wp_strip_all_tags($custom_css_raw);
+        if ($custom_css !== '') {
+            wp_add_inline_style('ichronoz-react-app-styles', $custom_css);
+        }
+    }
 
     // Enqueue Bootstrap JS bundle (includes Popper) locally only (no CDN)
     $bootstrap_js_path = plugin_dir_path(__FILE__) . 'assets/bootstrap.bundle.min.js';
@@ -131,7 +146,7 @@ function ichronoz_enqueue_scripts()
         wp_add_inline_style('ichronoz-react-app-styles', $critical_css_extra);
     }
     $selected_day_color = get_option('ichronoz_selected_day_color', '#0071c2');
-    $search_button_color = get_option('ichronoz_search_button_color', '#007BFF');
+    $search_button_color = get_option('ichronoz_search_button_color', '#1566d1');
     $room_hover_bg_color = get_option('ichronoz_room_hover_bg_color', '#e6e6e6');
     $secondary_color = get_option('ichronoz_secondary_color', '#6c757d');
     $success_color = get_option('ichronoz_success_color', '#198754');
@@ -219,6 +234,8 @@ function ichronoz_enqueue_scripts()
         'hidEnabled' => $hid_enabled,
         'hidOptions' => $hid_options,
         'gradientColors' => $gradient_colors,
+        'fabTransparent' => $fab_transparent,
+        'fabBorderColor' => $fab_border_color,
     ));
 
     $booking_data = array(
@@ -243,7 +260,7 @@ function ichronoz_register_settings()
 {
     add_option('ichronoz_form_layout', 'vertical');
     add_option('ichronoz_selected_day_color', '#0071c2');
-    add_option('ichronoz_search_button_color', '#007BFF');
+    add_option('ichronoz_search_button_color', '#1566d1');
     add_option('ichronoz_room_hover_bg_color', '#e6e6e6');
     add_option('ichronoz_secondary_color', '#6c757d');
     add_option('ichronoz_success_color', '#198754');
@@ -255,6 +272,9 @@ function ichronoz_register_settings()
     add_option('ichronoz_spinner_url', '/wp-admin/images/spinner.gif');
     add_option('ichronoz_calendar_range_bg', '#e3f2ff');
     add_option('ichronoz_fab_position', 'bottom-right');
+    // Floating button transparency toggle
+    add_option('ichronoz_fab_transparent', '0');
+    add_option('ichronoz_fab_border_color', '#1566d1');
     // Gradient colors (4 colors) string or array-compatible storage
     add_option('ichronoz_gradient_colors', '');
     // Script injection options
@@ -277,6 +297,8 @@ function ichronoz_register_settings()
     register_setting('ichronoz_general_group', 'ichronoz_loading_message');
     register_setting('ichronoz_general_group', 'ichronoz_spinner_url');
     register_setting('ichronoz_general_group', 'ichronoz_fab_position');
+    register_setting('ichronoz_general_group', 'ichronoz_fab_transparent');
+    register_setting('ichronoz_general_group', 'ichronoz_fab_border_color');
     register_setting('ichronoz_general_group', 'ichronoz_hid_enabled');
     register_setting('ichronoz_general_group', 'ichronoz_hid_options_json');
     register_setting('ichronoz_general_group', 'ichronoz_room_card_type');
@@ -302,6 +324,9 @@ function ichronoz_register_settings()
     register_setting('ichronoz_scripts_group', 'ichronoz_detail_script_enabled');
     register_setting('ichronoz_scripts_group', 'ichronoz_script_sanitization');
     register_setting('ichronoz_scripts_group', 'ichronoz_csp_nonce');
+    // Custom CSS option (enqueued on frontend)
+    add_option('ichronoz_custom_css', '');
+    register_setting('ichronoz_scripts_group', 'ichronoz_custom_css');
 }
 
 function ichronoz_settings_page()
@@ -570,6 +595,40 @@ function ichronoz_settings_page()
                         </td>
                     </tr>
                     <tr valign="top">
+                        <th scope="row">Floating Button Transparent
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Make the floating button background transparent (outline style).</span>
+                            </span>
+                        </th>
+                        <td>
+                            <label style="display:inline-flex; align-items:center; gap:8px;">
+                                <input type="checkbox" name="ichronoz_fab_transparent" value="1" <?php checked(get_option('ichronoz_fab_transparent', '0'), '1'); ?> />
+                                <span>Enable transparent floating button</span>
+                            </label>
+                            <p class="description">When enabled, the floating button has transparent background with a border.</p>
+                        </td>
+                    </tr>
+                    <?php $fab_transparent_checked = get_option('ichronoz_fab_transparent', '0') === '1'; ?>
+                    <tr valign="top" class="ichz-fab-border-row" style="<?php echo $fab_transparent_checked ? '' : 'display:none'; ?>">
+                        <th scope="row">Floating Button Border Color
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Border color for the transparent floating button.</span>
+                            </span>
+                        </th>
+                        <td>
+                            <?php $fab_border_color = esc_attr(get_option('ichronoz_fab_border_color', '#1566d1')); ?>
+                            <input type="text" name="ichronoz_fab_border_color" id="ichronoz_fab_border_color" value="<?php echo $fab_border_color; ?>" class="ichronoz-color-field" data-default-color="#1566d1" />
+                            <p class="description">Displayed only when transparency is enabled. Default: <code>#1566d1</code></p>
+                            <script>
+                                jQuery(function($){
+                                    if ($.fn.wpColorPicker) {
+                                        $('#ichronoz_fab_border_color').wpColorPicker();
+                                    }
+                                });
+                            </script>
+                        </td>
+                    </tr>
+                    <tr valign="top">
                         <th scope="row">API Key <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Get API key from iChronoz dashboard.</span></span></th>
                         <td>
                             <input type="text" name="ichronoz_api_value" value="<?php echo esc_attr(get_option('ichronoz_api_value', 'xxxxx')); ?>" class="regular-text" />
@@ -773,9 +832,9 @@ function ichronoz_settings_page()
                     <tr valign="top">
                         <th scope="row">Primary Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Fill color of the floating search button.</span></span></th>
                         <td>
-                            <input type="text" name="ichronoz_search_button_color" value="<?php echo esc_attr(!empty(get_option('ichronoz_search_button_color')) ? get_option('ichronoz_search_button_color') : '#007BFF'); ?>" class="color-picker" />
-                            <p class="description">Default: <code>#007BFF</code>
-                                <a href="#" class="button-link" data-default-color="#007BFF">Reset</a>
+                            <input type="text" name="ichronoz_search_button_color" value="<?php echo esc_attr(!empty(get_option('ichronoz_search_button_color')) ? get_option('ichronoz_search_button_color') : '#1566d1'); ?>" class="color-picker" />
+                            <p class="description">Default: <code>#1566d1</code>
+                                <a href="#" class="button-link" data-default-color="#1566d1">Reset</a>
                             </p>
                         </td>
                     </tr>
@@ -809,9 +868,9 @@ function ichronoz_settings_page()
                     <tr valign="top">
                         <th scope="row">Link Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Overrides link color. Leave empty to inherit theme.</span></span></th>
                         <td>
-                            <input type="text" name="ichronoz_link_color" value="<?php echo esc_attr(!empty(get_option('ichronoz_link_color')) ? get_option('ichronoz_link_color') : '#007BFF'); ?>" class="color-picker" />
+                            <input type="text" name="ichronoz_link_color" value="<?php echo esc_attr(!empty(get_option('ichronoz_link_color')) ? get_option('ichronoz_link_color') : '#1566d1'); ?>" class="color-picker" />
                             <p class="description">Default: inherit theme (empty)
-                                <a href="#" class="button-link" data-default-color="#007BFF">Reset</a>
+                                <a href="#" class="button-link" data-default-color="#1566d1">Reset</a>
                             </p>
                         </td>
                     </tr>
@@ -842,6 +901,17 @@ function ichronoz_settings_page()
                 <!-- Reset All handled in js/color-picker.js -->
             <?php elseif ($active_tab === 'scripts'): // Scripts injection tab 
             ?>
+                <tr valign="top">
+                    <th scope="row">Custom CSS
+                        <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                            <span class="ichz-tip">Add CSS to customize iChronoz components. Prefer scoping with .ichronoz to affect only the widget.</span>
+                        </span>
+                    </th>
+                    <td>
+                        <textarea name="ichronoz_custom_css" rows="10" class="large-text code" placeholder=".ichronoz .btn { background: #1e88e5; }\n.ichronoz .card { border-radius: 8px; }\n"><?php echo esc_textarea(get_option('ichronoz_custom_css', '')); ?></textarea>
+                        <p class="description">Raw CSS only; HTML tags are stripped. Enqueued after plugin styles.</p>
+                    </td>
+                </tr>
                 <tr valign="top">
                     <th scope="row">Booking Page Script
                         <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
@@ -905,18 +975,28 @@ function ichronoz_settings_page()
 
         <script>
             (function() {
-                var cb = document.getElementById('ichronoz_btn_rounded');
-                var row = document.querySelector('.ichz-btn-radius-row');
-                var input = document.getElementById('ichronoz_btn_radius');
-                if (!cb || !row) return;
-
-                function sync() {
-                    var on = cb.checked;
-                    row.style.display = on ? '' : 'none';
-                    if (input) input.disabled = !on;
+                // Show/hide FAB border color when transparency toggled
+                var fabCb = document.querySelector('input[name="ichronoz_fab_transparent"]');
+                var fabRow = document.querySelector('tr.ichz-fab-border-row');
+                if (fabCb && fabRow) {
+                    function syncFab() { fabRow.style.display = fabCb.checked ? '' : 'none'; }
+                    fabCb.addEventListener('change', syncFab);
+                    syncFab();
                 }
-                cb.addEventListener('change', sync);
-                sync();
+
+                // Button rounding depends
+                var roundCb = document.getElementById('ichronoz_btn_rounded');
+                var roundRow = document.querySelector('.ichz-btn-radius-row');
+                var radiusInput = document.getElementById('ichronoz_btn_radius');
+                if (roundCb && roundRow) {
+                    function syncRound() {
+                        var on = roundCb.checked;
+                        roundRow.style.display = on ? '' : 'none';
+                        if (radiusInput) radiusInput.disabled = !on;
+                    }
+                    roundCb.addEventListener('change', syncRound);
+                    syncRound();
+                }
             })();
         </script>
 
@@ -1173,7 +1253,7 @@ function ichronoz_search_button_shortcode()
 ?>
     <?php $fab_position = get_option('ichronoz_fab_position', 'bottom-right'); ?>
     <div class="ichronoz-fab-wrapper" data-fab-position="<?php echo esc_attr($fab_position); ?>">
-        <button type="button" class="ichronoz-fab-button" aria-expanded="false" aria-controls="ichronoz-fab-panel">
+        <button type="button" class="ichronoz-fab-button btn btn-sm" aria-expanded="false" aria-controls="ichronoz-fab-panel">
             <i class="fa fa-search" aria-hidden="true"></i>
             <span class="ichronoz-fab-text">Book Now</span>
         </button>
