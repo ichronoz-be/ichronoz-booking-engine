@@ -351,3 +351,7 @@
 .ichronoz .no-border {
   border: none !important;
 }
+
+.ichronoz .btn-link {
+  text-decoration: none;
+}
