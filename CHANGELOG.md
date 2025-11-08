@@ -4,15 +4,14 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
-## [3.0] - 2025-11-03
-
-### Added
-- New customizatoin for floating button
+## [3.0.1] - 2025-11-08
 
 ### Fixed
-- Fixed total summary section
+- Auto select payment option on checkout page if only one payment option is available
+- Fixed booking summary card layout on mobile
+- Fixed extras layout on mobile
 
-## [3.0-beta.3] - 2025-10-23
+## [3.0] - 2025-10-23
 
 ### Added
 - New selection for multiple room list view
