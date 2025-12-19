@@ -4,6 +4,12 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.0.2] - 2025-12-20
+
+### Fixed
+- Making country origin optional
+- Enhance checkin-checkout UI part
+
 ## [3.0.1] - 2025-11-08
 
 ### Fixed
