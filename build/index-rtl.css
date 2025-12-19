@@ -415,3 +415,7 @@
   animation: ichz-shake 300ms ease-in-out;
 }
 
+.ichronoz .bottom-100 {
+  bottom: calc(-120px + 10vh) !important;
+}
+
