@@ -4,6 +4,11 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.0.3] - 2026-01-24
+
+### Fixed
+- Fixing qty more then 1 bug
+
 ## [3.0.2] - 2025-12-20
 
 ### Fixed
