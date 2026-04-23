@@ -354,12 +354,12 @@
 
 /* Apply Lato font to all plugin content (exclude icon fonts) */
 .ichronoz {
-  font-size: 1.027rem;
+  font-size: 0.987rem;
 }
 
 /* Tweak Bootstrap .small inside plugin scope */
 .ichronoz .small {
-  font-size: 0.927rem !important;
+  font-size: 0.77rem !important;
 }
 
 .ichronoz .fs-7 {
@@ -417,5 +417,165 @@
 
 .ichronoz .bottom-100 {
   bottom: calc(-120px + 10vh) !important;
+}
+
+.ichronoz ul.service-list {
+  margin: 0 !important;
+}
+
+.ichronoz .nav-pills .nav-link.active {
+  background-color: transparent;
+  color: black;
+  border-bottom: 2px solid var(--bs-primary);
+  border-radius: inherit;
+  font-weight: 600;
+}
+
+.ichronoz .amenities-list {
+  line-height: 20px;
+  margin: 3px 0 0 5px;
+  display: inline-block;
+  padding: 0 5px;
+  font-size: 0.80rem;
+}
+
+/* Room list carousel */
+.ichronoz .ichronoz-room-carousel {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+.ichronoz .ichronoz-room-track {
+  overflow: hidden;
+}
+.ichronoz .ichronoz-room-card-mini {
+  min-width: 0;
+  width: min(280px, 30vw);
+  flex: 1 1 0;
+  min-height: 260px;
+}
+.ichronoz .ichz-room-overlay-card .ichz-room-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.78) contrast(1);
+  transition: transform 180ms ease, filter 180ms ease;
+}
+.ichronoz .ichz-room-overlay-card .ichz-room-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(-180deg, rgba(0,0,0,0.05) 30%, rgba(0,0,0,0.7) 100%);
+  transition: opacity 180ms ease;
+}
+.ichronoz .ichz-room-overlay-card:hover .ichz-room-bg {
+  transform: scale(1.03);
+  filter: brightness(1) contrast(1.05);
+}
+.ichronoz .ichz-room-overlay-card:hover .ichz-room-gradient {
+  opacity: 0.55; /* “lights on” feel by reducing dark overlay */
+}
+.ichronoz .ichz-room-overlay-card .card-body {
+  z-index: 2;
+}
+.ichronoz .ichz-room-overlay-card .badge {
+  backdrop-filter: blur(4px);
+}
+.ichronoz .ichz-peek-row {
+  width: 120%;
+  margin-right: -10%;
+  gap: 0.5rem !important;
+}
+.ichronoz .ichz-peek-card {
+  flex: 0 0 28%;
+  min-width: 28%;
+  min-height: 360px;
+  filter: saturate(0.9);
+}
+.ichronoz .ichz-center-card {
+  flex: 0 0 40%;
+  min-width: 40%;
+}
+.ichronoz .ichz-peek-label {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  left: 0.5rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+}
+.ichronoz .ichz-peek-card .ichz-room-bg {
+  filter: brightness(0.55);
+}
+.ichronoz .ichz-peek-card:hover .ichz-room-bg {
+  filter: brightness(0.75);
+}
+
+@media (max-width: 768px) {
+  .ichronoz .ichz-peek-row {
+    width: 100%;
+    margin-right: 0;
+    gap: 0.75rem !important;
+  }
+  .ichronoz .ichz-peek-card {
+    display: none;
+  }
+  .ichronoz .ichz-center-card {
+    flex: 0 0 100%;
+    min-width: 100%;
+  }
+}
+.ichronoz .ichronoz-room-nav {
+  position: absolute;
+  top: 40%;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  transform: translateY(-50%);
+}
+.ichronoz .ichronoz-room-nav:last-of-type {
+  right: auto;
+  left: 0;
+}
+
+@media (max-width: 768px) {
+  .ichronoz .ichronoz-room-card-mini {
+    width: 65vw;
+  }
+}
+
+.ichronoz .ichronoz-room-card-mini {
+  --bs-card-spacer-y: 1rem;
+    --bs-card-spacer-x: 1rem;
+    --bs-card-title-spacer-y: 0.5rem;
+    --bs-card-title-color: ;
+    --bs-card-subtitle-color: ;
+    --bs-card-border-width: var(--bs-border-width);
+    --bs-card-border-color: var(--bs-border-color-translucent);
+    --bs-card-border-radius: var(--bs-border-radius);
+    --bs-card-box-shadow: ;
+    --bs-card-inner-border-radius: calc(var(--bs-border-radius) - (var(--bs-border-width)));
+    --bs-card-cap-padding-y: 0.5rem;
+    --bs-card-cap-padding-x: 1rem;
+    --bs-card-cap-bg: rgba(var(--bs-body-color-rgb), 0.03);
+    --bs-card-cap-color: ;
+    --bs-card-height: ;
+    --bs-card-color: ;
+    --bs-card-bg: var(--bs-body-bg);
+    --bs-card-img-overlay-padding: 1rem;
+    --bs-card-group-margin: 0.75rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: var(--bs-card-height);
+    color: var(--bs-body-color);
+    word-wrap: break-word;
+    background-color: var(--bs-card-bg);
+    background-clip: border-box;
+    border: var(--bs-card-border-width) solid var(--bs-card-border-color);
 }
 

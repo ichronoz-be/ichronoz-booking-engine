@@ -4,6 +4,11 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.1] - 2026-04-23
+
+### Added
+- Multi services support
+
 ## [3.0.4] - 2026-04-15
 
 ### Fixed
