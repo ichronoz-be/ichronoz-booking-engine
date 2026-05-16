@@ -4,6 +4,12 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.0.5] - 2026-10-16
+
+### Fixed
+- Fixing calendar placement
+- Enhancing calendar UI
+
 ## [3.0.4] - 2026-04-15
 
 ### Fixed
