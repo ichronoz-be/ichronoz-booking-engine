@@ -3,7 +3,7 @@
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
- * Version: 3.0.5
+ * Version: 3.0.6
  * Author: iChronoz
  */
 
@@ -419,6 +419,7 @@ function ichronoz_settings_page()
             if ($v[0] === 'v' || $v[0] === 'V') $v = substr($v, 1);
             // allow digits, letters, dots, dashes, underscores
             $v = preg_replace('/[^0-9A-Za-z._-]/', '', $v);
+            $v = ltrim($v, '.');
             return $v;
         };
         $is_semverish = function ($v) {
@@ -437,7 +438,7 @@ function ichronoz_settings_page()
         $cache = get_transient('ichronoz_update_meta');
         $last_checked_ts = 0;
         if (!$force_check && is_array($cache) && isset($cache['latest_version'], $cache['has_update'])) {
-            $latest_version = $cache['latest_version'];
+            $latest_version = $normalize_version($cache['latest_version']);
             $has_update = (bool) $cache['has_update'];
             $last_checked_ts = isset($cache['checked_at']) ? intval($cache['checked_at']) : 0;
         }
@@ -470,6 +471,7 @@ function ichronoz_settings_page()
 
         // Compare versions
         $current_norm = $normalize_version($current_version);
+        $latest_version = $normalize_version($latest_version);
         if ($latest_version && $current_norm) {
             if ($is_semverish($current_norm) && $is_semverish($latest_version) && function_exists('version_compare')) {
                 $has_update = version_compare($current_norm, $latest_version, '<');
