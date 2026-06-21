@@ -4,6 +4,11 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.0.7] - 2026-06-21
+
+### Fixed
+- adding promo banner
+
 ## [3.0.6] - 2026-06-01
 
 ### Fixed
