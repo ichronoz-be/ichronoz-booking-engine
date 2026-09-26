@@ -47,7 +47,7 @@
       if (!window.confirm('Reset all UI colors to defaults?')) return;
       var defaults = {
         ichronoz_selected_day_color: '#0071c2',
-        ichronoz_search_button_color: '#007BFF',
+        ichronoz_search_button_color: '#1566d1',
         ichronoz_room_hover_bg_color: '#e6e6e6',
         ichronoz_secondary_color: '#6c757d',
         ichronoz_success_color: '#198754',

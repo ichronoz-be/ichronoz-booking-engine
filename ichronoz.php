@@ -3,12 +3,68 @@
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
- * Version: 3.0.7
+ * Version: 3.1
  * Author: iChronoz
  */
 
 if (!defined('ABSPATH')) {
     exit;
+}
+
+require_once plugin_dir_path(__FILE__) . 'includes/Analytics/Analytics.php';
+register_activation_hook(__FILE__, 'ichronoz_analytics_install_schema');
+
+/**
+ * Sanitize the grouped room layout while preserving the legacy layout as the default.
+ *
+ * @param mixed $value Submitted option value.
+ * @return string
+ */
+function ichronoz_sanitize_room_group_layout($value)
+{
+    $value = sanitize_key((string) $value);
+
+    return in_array($value, array('small-image', 'regular-image', 'compact-table', 'promo-cards'), true)
+        ? $value
+        : 'small-image';
+}
+
+/**
+ * Optional content sections available inside room rate cards.
+ *
+ * @return array<string, string>
+ */
+function ichronoz_get_grouped_room_detail_options()
+{
+    return array(
+        'availability' => 'Availability and recommendations',
+        'meal' => 'Meal and breakfast information',
+        'refund-policy' => 'Refund policy',
+        'detail-links' => 'Rate details and terms links',
+        'stay-average-rate' => 'Stay details and average nightly rate',
+        'description' => 'Rate description (desc)',
+        'deposit' => 'Deposit information',
+        'discount' => 'Discount and original price',
+        'currency-converter' => 'Currency converter',
+    );
+}
+
+/**
+ * Allow only supported room rate-card section keys.
+ *
+ * @param mixed $value Submitted option value.
+ * @return array<int, string>
+ */
+function ichronoz_sanitize_grouped_room_details($value)
+{
+    if (!is_array($value)) {
+        return array_keys(ichronoz_get_grouped_room_detail_options());
+    }
+
+    $allowed = array_keys(ichronoz_get_grouped_room_detail_options());
+    $selected = array_map('sanitize_key', $value);
+
+    return array_values(array_intersect($allowed, $selected));
 }
 
 function ichronoz_admin_enqueue_scripts($hook)
@@ -18,12 +74,29 @@ function ichronoz_admin_enqueue_scripts($hook)
     if ($page !== 'ichronoz') {
         return;
     }
+
+    $admin_style_path = plugin_dir_path(__FILE__) . 'assets/admin/settings.css';
+    $admin_script_path = plugin_dir_path(__FILE__) . 'assets/admin/settings.js';
+
+    wp_enqueue_style(
+        'ichronoz-admin-settings',
+        plugins_url('assets/admin/settings.css', __FILE__),
+        array(),
+        file_exists($admin_style_path) ? filemtime($admin_style_path) : null
+    );
     wp_enqueue_style('wp-color-picker');
     wp_enqueue_script(
         'ichronoz-color-picker-script',
         plugins_url('js/color-picker.js', __FILE__),
         array('wp-color-picker', 'jquery'),
         false,
+        true
+    );
+    wp_enqueue_script(
+        'ichronoz-admin-settings',
+        plugins_url('assets/admin/settings.js', __FILE__),
+        array('jquery'),
+        file_exists($admin_script_path) ? filemtime($admin_script_path) : null,
         true
     );
 }
@@ -104,9 +177,9 @@ function ichronoz_enqueue_scripts()
         '.ichronoz-fab-wrapper{position:fixed;' . $wrapper_pos . 'z-index:999999}' .
         ($fab_transparent
             ? '.ichronoz-fab-button{background:transparent !important;color:' . $fab_border_color . ' !important;border:2px solid ' . $fab_border_color . ' !important}'
-              . '.ichronoz-fab-button:hover,.ichronoz-fab-button:focus{background:' . $btn_color . ' !important; box-shadow:0 0 0 3px rgba(0,0,0,0.06); color:#FFFFFF !important;}'
+            . '.ichronoz-fab-button:hover,.ichronoz-fab-button:focus{background:' . $btn_color . ' !important; box-shadow:0 0 0 3px rgba(0,0,0,0.06); color:#FFFFFF !important;}'
             : '.ichronoz-fab-button{background:' . $btn_color . ' !important;color:#fff !important;border:none !important}'
-              . '.ichronoz-fab-button:hover,.ichronoz-fab-button:focus{filter:brightness(0.95);}') .
+            . '.ichronoz-fab-button:hover,.ichronoz-fab-button:focus{filter:brightness(0.95);}') .
         '.ichronoz-fab-panel{position:fixed;' . $panel_pos . 'z-index:999999;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:12px;width:min(92vw,360px);display:none}' .
         '.ichronoz-fab-panel.open{display:block}' .
         '.ichronoz-fab-panel .ichronoz{max-height:80vh;}' .
@@ -142,7 +215,22 @@ function ichronoz_enqueue_scripts()
     $btn_round_enabled = get_option('ichronoz_btn_rounded', '0') === '1';
     $btn_radius = trim((string) get_option('ichronoz_btn_radius', '6px'));
     if ($btn_round_enabled && $btn_radius !== '') {
-        $critical_css_extra = '.ichronoz .btn{border-radius:' . esc_attr($btn_radius) . ' !important;}';
+        $radius = esc_attr($btn_radius);
+        $critical_css_extra =
+            '.ichronoz{' .
+            '--bs-border-radius:' . $radius . ';' .
+            '--bs-border-radius-sm:' . $radius . ';' .
+            '--bs-border-radius-lg:' . $radius . ';' .
+            '--bs-border-radius-xl:' . $radius . ';' .
+            '--bs-border-radius-xxl:' . $radius . ';' .
+            '--bs-border-radius-2xl:' . $radius . ';' .
+            '}' .
+            '.ichronoz .btn,.ichronoz .card,.ichronoz .form-control,.ichronoz .form-select,.ichronoz .input-group-text,.ichronoz .dropdown-menu,.ichronoz .modal-content,.ichronoz .list-group-item,.ichronoz .alert,.ichronoz .ichz-ticket-list-card__image{border-radius:' . $radius . ' !important;}' .
+            '.ichronoz .rounded,.ichronoz .rounded-1,.ichronoz .rounded-2,.ichronoz .rounded-3,.ichronoz .rounded-4,.ichronoz .rounded-5{border-radius:' . $radius . ' !important;}' .
+            '.ichronoz .rounded-top{border-top-left-radius:' . $radius . ' !important;border-top-right-radius:' . $radius . ' !important;}' .
+            '.ichronoz .rounded-end{border-top-right-radius:' . $radius . ' !important;border-bottom-right-radius:' . $radius . ' !important;}' .
+            '.ichronoz .rounded-bottom{border-bottom-right-radius:' . $radius . ' !important;border-bottom-left-radius:' . $radius . ' !important;}' .
+            '.ichronoz .rounded-start{border-top-left-radius:' . $radius . ' !important;border-bottom-left-radius:' . $radius . ' !important;}';
         wp_add_inline_style('ichronoz-react-app-styles', $critical_css_extra);
     }
     $selected_day_color = get_option('ichronoz_selected_day_color', '#0071c2');
@@ -157,6 +245,12 @@ function ichronoz_enqueue_scripts()
     $loading_message = get_option('ichronoz_loading_message', 'Searching for the best rate within your requested period: {fromLong} - {toShort}');
     $spinner_url = get_option('ichronoz_spinner_url', '/wp-admin/images/spinner.gif');
     $calendar_range_bg = get_option('ichronoz_calendar_range_bg', '#e3f2ff');
+    $room_group_layout = ichronoz_sanitize_room_group_layout(
+        get_option('ichronoz_room_group_layout', 'small-image')
+    );
+    $grouped_room_details = ichronoz_sanitize_grouped_room_details(
+        get_option('ichronoz_grouped_room_details', array_keys(ichronoz_get_grouped_room_detail_options()))
+    );
     // HID selector config
     $hid_enabled = get_option('ichronoz_hid_enabled', '0') === '1';
     $hid_options_raw = get_option('ichronoz_hid_options_json', '[]');
@@ -213,11 +307,14 @@ function ichronoz_enqueue_scripts()
 
     wp_localize_script('ichronoz-react-app', 'ichronozSettings', array(
         'apiBase' => 'https://api.ichronoz.net',
+        'debugEnabled' => defined('WP_DEBUG') && WP_DEBUG,
         'layout' => $layout_option,
         'selectedDayColor' => $selected_day_color,
         'searchButtonColor' => $search_button_color,
         'roomHoverBgColor' => $room_hover_bg_color,
         'roomCardType' => get_option('ichronoz_room_card_type', 'default'),
+        'roomGroupLayout' => $room_group_layout,
+        'roomDetails' => $grouped_room_details,
         'secondaryColor' => $secondary_color,
         'successColor' => $success_color,
         'warningColor' => $warning_color,
@@ -236,6 +333,7 @@ function ichronoz_enqueue_scripts()
         'gradientColors' => $gradient_colors,
         'fabTransparent' => $fab_transparent,
         'fabBorderColor' => $fab_border_color,
+        'analytics' => ichronoz_analytics_runtime_config(),
     ));
 
     $booking_data = array(
@@ -289,6 +387,10 @@ function ichronoz_register_settings()
     add_option('ichronoz_hid_options_json', '[]');
     // Room card type (default | room)
     add_option('ichronoz_room_card_type', 'default');
+    // Grouped room layout (small-image | regular-image | compact-table | promo-cards)
+    add_option('ichronoz_room_group_layout', 'small-image');
+    // Optional sections shown inside each grouped rate card.
+    add_option('ichronoz_grouped_room_details', array_keys(ichronoz_get_grouped_room_detail_options()));
     // Split settings into per-tab groups to prevent cross-tab resets
     // General group
     register_setting('ichronoz_general_group', 'ichronoz_form_layout');
@@ -302,6 +404,24 @@ function ichronoz_register_settings()
     register_setting('ichronoz_general_group', 'ichronoz_hid_enabled');
     register_setting('ichronoz_general_group', 'ichronoz_hid_options_json');
     register_setting('ichronoz_general_group', 'ichronoz_room_card_type');
+    register_setting(
+        'ichronoz_general_group',
+        'ichronoz_room_group_layout',
+        array(
+            'type' => 'string',
+            'sanitize_callback' => 'ichronoz_sanitize_room_group_layout',
+            'default' => 'small-image',
+        )
+    );
+    register_setting(
+        'ichronoz_general_group',
+        'ichronoz_grouped_room_details',
+        array(
+            'type' => 'array',
+            'sanitize_callback' => 'ichronoz_sanitize_grouped_room_details',
+            'default' => array_keys(ichronoz_get_grouped_room_detail_options()),
+        )
+    );
 
     // UI group
     register_setting('ichronoz_ui_group', 'ichronoz_selected_day_color');
@@ -332,7 +452,7 @@ function ichronoz_register_settings()
 function ichronoz_settings_page()
 {
 ?>
-    <div class="wrap">
+    <div class="wrap ichz-settings-page">
         <?php
         if (!function_exists('get_plugin_data')) {
             require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -340,64 +460,13 @@ function ichronoz_settings_page()
         $ichz_pd = get_plugin_data(__FILE__, false, false);
         $ichz_ver = isset($ichz_pd['Version']) ? $ichz_pd['Version'] : '';
         ?>
-        <h1 style="display:flex; align-items:center; gap:10px;">
-            iChronoz Settings
+        <div class="ichz-settings-page__header">
+            <h1>iChronoz Settings</h1>
             <?php if ($ichz_ver): ?>
-                <span style="display:inline-block; font-size:12px; line-height:1; padding:4px 8px; border-radius:999px; background:#e9ecef; color:#333; vertical-align:middle;">v<?php echo esc_html($ichz_ver); ?></span>
+                <span class="ichz-settings-page__version">v<?php echo esc_html($ichz_ver); ?></span>
             <?php endif; ?>
-        </h1>
-        <style>
-            .ichz-help {
-                position: relative;
-                display: inline-flex;
-                align-items: center;
-                vertical-align: middle;
-                margin-left: 6px;
-                cursor: help
-            }
-
-            .ichz-help .dashicons {
-                font-size: 18px;
-                width: 18px;
-                height: 18px;
-                line-height: 18px
-            }
-
-            .ichz-help .ichz-tip {
-                position: absolute;
-                left: 50%;
-                transform: translateX(-50%);
-                bottom: 140%;
-                white-space: normal;
-                max-width: 420px;
-                background: #222;
-                color: #fff;
-                padding: 10px 12px;
-                border-radius: 6px;
-                font-size: 12.5px;
-                line-height: 1.5;
-                box-shadow: 0 6px 20px rgba(0, 0, 0, .28);
-                opacity: 0;
-                pointer-events: none;
-                transition: opacity .15s ease, transform .15s ease;
-                z-index: 99999
-            }
-
-            .ichz-help:hover .ichz-tip {
-                opacity: 1
-            }
-
-            .ichz-help .ichz-tip:after {
-                content: "";
-                position: absolute;
-                top: 100%;
-                left: 50%;
-                transform: translateX(-50%);
-                border-width: 7px;
-                border-style: solid;
-                border-color: #222 transparent transparent transparent
-            }
-        </style>
+        </div>
+        <p class="ichz-settings-page__description">Configure the booking experience, appearance, analytics, and integrations for your iChronoz components.</p>
 
         <?php
         // Only show Maintenance if a newer version is available on GitHub
@@ -488,38 +557,92 @@ function ichronoz_settings_page()
         ), 12 * HOUR_IN_SECONDS);
 
         if ($has_update): ?>
-            <hr />
-            <div class="notice wpforms-notice notice-info is-dismissible wpforms-review-notice">
-                <h2>Improve your iChronoz Booking Engine Plugin</h2>
-                <p>New version available: <strong><?php echo esc_html($latest_version); ?></strong> (installed: <strong><?php echo esc_html($current_version); ?></strong>)</p>
-                <form method="post">
+            <section class="ichz-update-card ichz-update-card--available" aria-labelledby="ichz-update-title">
+                <span class="dashicons dashicons-update ichz-update-card__icon" aria-hidden="true"></span>
+                <div class="ichz-update-card__content">
+                    <h2 id="ichz-update-title">Plugin update available</h2>
+                    <p>Update iChronoz to receive the latest improvements and bug fixes.</p>
+                    <dl class="ichz-update-card__versions">
+                        <div><dt>Installed</dt><dd>v<?php echo esc_html($current_version); ?></dd></div>
+                        <div><dt>Available</dt><dd>v<?php echo esc_html($latest_version); ?></dd></div>
+                    </dl>
+                </div>
+                <form method="post" class="ichz-update-card__action">
                     <?php wp_nonce_field('ichronoz_self_update'); ?>
-                    <p class="description">✨ To enjoy the latest features and bug fixes, simply download and install the newest version..</p>
                     <input type="hidden" name="ichronoz_do_self_update" value="1" />
-                    <?php submit_button('Update', 'secondary'); ?>
+                    <?php submit_button('Update now', 'primary', 'submit', false); ?>
                 </form>
-            </div>
+            </section>
         <?php else: ?>
-            <hr />
-            <div class="notice wpforms-notice notice-info is-dismissible wpforms-review-notice">
-                <h2>Improve your iChronoz Booking Engine Plugin</h2>
-                <p>
-                    <a class="button button-small" href="<?php echo esc_url(add_query_arg(array('page' => 'ichronoz', 'ichz_force_check' => 1, '_wpnonce' => wp_create_nonce('ichz_force_check')), admin_url('admin.php'))); ?>">Check for updates now</a>
-                    <?php if (!empty($last_checked_ts)): ?>
-                        <span style="color:#646970;">Last checked: <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_checked_ts)); ?></span>
-                    <?php endif; ?>
-                </p>
-
-            </div>
+            <section class="ichz-update-card ichz-update-card--current" aria-labelledby="ichz-update-title">
+                <span class="dashicons dashicons-yes-alt ichz-update-card__icon" aria-hidden="true"></span>
+                <div class="ichz-update-card__content">
+                    <h2 id="ichz-update-title">Plugin is up to date</h2>
+                    <p>
+                        You are running iChronoz v<?php echo esc_html($current_version); ?>.
+                        <?php if (!empty($last_checked_ts)): ?>
+                            <span class="ichz-update-card__checked">Last checked <?php echo esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $last_checked_ts)); ?>.</span>
+                        <?php endif; ?>
+                    </p>
+                </div>
+                <div class="ichz-update-card__action">
+                    <a class="button" href="<?php echo esc_url(add_query_arg(array('page' => 'ichronoz', 'ichz_force_check' => 1, '_wpnonce' => wp_create_nonce('ichz_force_check')), admin_url('admin.php'))); ?>">Check again</a>
+                </div>
+            </section>
         <?php endif; ?>
 
-        <?php $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'general'; ?>
-        <h2 class="nav-tab-wrapper">
-            <a href="?page=ichronoz&tab=general" class="nav-tab <?php echo $active_tab === 'general' ? 'nav-tab-active' : ''; ?>">General</a>
-            <a href="?page=ichronoz&tab=ui" class="nav-tab <?php echo $active_tab === 'ui' ? 'nav-tab-active' : ''; ?>">UI Settings</a>
-            <a href="?page=ichronoz&tab=scripts" class="nav-tab <?php echo $active_tab === 'scripts' ? 'nav-tab-active' : ''; ?>">Scripts</a>
-            <a href="?page=ichronoz&tab=howto" class="nav-tab <?php echo $active_tab === 'howto' ? 'nav-tab-active' : ''; ?>">How To Use</a>
-        </h2>
+        <?php
+        $tabs = array(
+            'general' => array(
+                'label' => 'Setup',
+                'icon' => 'dashicons-admin-settings',
+                'title' => 'Booking setup',
+                'description' => 'Configure room presentation, booking connection, loading states, and multiple properties.',
+            ),
+            'ui' => array(
+                'label' => 'Appearance',
+                'icon' => 'dashicons-art',
+                'title' => 'Appearance',
+                'description' => 'Match iChronoz components to your brand using consistent colors and shape controls.',
+            ),
+            'analytics' => array(
+                'label' => 'Analytics',
+                'icon' => 'dashicons-chart-bar',
+                'title' => 'Booking analytics',
+                'description' => 'Review the booking funnel and configure privacy-conscious analytics integrations.',
+            ),
+            'scripts' => array(
+                'label' => 'Advanced',
+                'icon' => 'dashicons-editor-code',
+                'title' => 'Advanced customization',
+                'description' => 'Add trusted custom CSS or JavaScript and control how injected code is handled.',
+            ),
+            'howto' => array(
+                'label' => 'Help & Shortcodes',
+                'icon' => 'dashicons-editor-help',
+                'title' => 'Help and shortcodes',
+                'description' => 'Copy shortcode examples and learn where each iChronoz component should be used.',
+            ),
+        );
+        $requested_tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : 'general';
+        $active_tab = isset($tabs[$requested_tab]) ? $requested_tab : 'general';
+        ?>
+        <nav class="nav-tab-wrapper ichz-settings-tabs" aria-label="iChronoz settings sections">
+            <?php foreach ($tabs as $tab_key => $tab): ?>
+                <?php $tab_url = add_query_arg(array('page' => 'ichronoz', 'tab' => $tab_key), admin_url('admin.php')); ?>
+                <a href="<?php echo esc_url($tab_url); ?>" class="nav-tab <?php echo $active_tab === $tab_key ? 'nav-tab-active' : ''; ?>" <?php echo $active_tab === $tab_key ? 'aria-current="page"' : ''; ?>>
+                    <span class="dashicons <?php echo esc_attr($tab['icon']); ?>" aria-hidden="true"></span>
+                    <?php echo esc_html($tab['label']); ?>
+                </a>
+            <?php endforeach; ?>
+        </nav>
+        <div class="ichz-tab-summary">
+            <h2><?php echo esc_html($tabs[$active_tab]['title']); ?></h2>
+            <p><?php echo esc_html($tabs[$active_tab]['description']); ?></p>
+        </div>
+        <?php if ($active_tab === 'analytics'): ?>
+            <?php ichronoz_analytics_render_admin_dashboard(); ?>
+        <?php endif; ?>
         <?php
         // Handle self-update action
         if (isset($_POST['ichronoz_do_self_update'])) {
@@ -535,7 +658,12 @@ function ichronoz_settings_page()
             }
         }
         ?>
-        <form method="post" action="options.php">
+        <?php if ($active_tab === 'analytics'): ?>
+            <?php ichronoz_analytics_render_admin_settings(); ?>
+        <?php else: ?>
+        <?php $has_settings_form = $active_tab !== 'howto'; ?>
+        <?php if ($has_settings_form): ?>
+        <form method="post" action="options.php" class="ichz-settings-form">
             <?php
             // Render fields depending on active tab with separate groups
             if ($active_tab === 'general') {
@@ -550,8 +678,17 @@ function ichronoz_settings_page()
             }
             do_settings_sections('ichronoz_options_group');
             ?>
-            <table class="form-table">
+        <?php endif; ?>
+            <?php if ($active_tab !== 'scripts'): ?>
+            <div class="ichz-settings-card">
+            <table class="form-table" role="presentation">
                 <?php if ($active_tab === 'general'): ?>
+                    <tr class="ichz-settings-section">
+                        <th colspan="2">
+                            <span class="ichz-settings-section__title">Room and search presentation</span>
+                            <span class="ichz-settings-section__description">Choose how guests search and compare the available rooms.</span>
+                        </th>
+                    </tr>
                     <tr valign="top">
                         <th scope="row">Room List View
                             <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
@@ -560,13 +697,75 @@ function ichronoz_settings_page()
                         </th>
                         <td>
                             <?php $room_view = get_option('ichronoz_room_card_type', 'default'); ?>
-                            <select name="ichronoz_room_card_type">
+                            <select name="ichronoz_room_card_type" id="ichronoz_room_card_type">
                                 <option value="default" <?php selected($room_view, 'default'); ?>>Default (flat list)</option>
                                 <option value="room" <?php selected($room_view, 'room'); ?>>Grouped by room type</option>
                             </select>
                             <p class="description">Default: <code>default</code>
-                                <a href="#" class="button-link" onclick="event.preventDefault(); var s=this.parentNode.previousElementSibling; if(s && s.tagName==='SELECT'){ s.value='default'; }">Reset</a>
+                                <a href="#" class="button-link" onclick="event.preventDefault(); var s=this.parentNode.previousElementSibling; if(s && s.tagName==='SELECT'){ s.value='default'; s.dispatchEvent(new Event('change')); }">Reset</a>
                             </p>
+                        </td>
+                    </tr>
+                    <?php
+                    $room_group_layout = ichronoz_sanitize_room_group_layout(get_option('ichronoz_room_group_layout', 'small-image'));
+                    $grouped_room_detail_options = ichronoz_get_grouped_room_detail_options();
+                    $selected_grouped_room_details = ichronoz_sanitize_grouped_room_details(
+                        get_option('ichronoz_grouped_room_details', array_keys($grouped_room_detail_options))
+                    );
+                    ?>
+                    <tr valign="top" id="ichz-room-details-row">
+                        <th scope="row">Item details to show
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Select the optional content displayed inside every room rate card. Price and booking actions are always shown.</span>
+                            </span>
+                        </th>
+                        <td>
+                            <input type="hidden" name="ichronoz_grouped_room_details[]" value="" />
+                            <div class="ichz-checkbox-grid" id="ichz-grouped-room-details">
+                                <?php foreach ($grouped_room_detail_options as $detail_key => $detail_label): ?>
+                                    <label class="ichz-checkbox-option">
+                                        <input type="checkbox" name="ichronoz_grouped_room_details[]" value="<?php echo esc_attr($detail_key); ?>" <?php checked(in_array($detail_key, $selected_grouped_room_details, true)); ?> />
+                                        <span><?php echo esc_html($detail_label); ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="ichz-checkbox-actions">
+                                <button type="button" class="button button-small" data-ichz-checkbox-action="select" data-ichz-checkbox-target="#ichz-grouped-room-details">Select all</button>
+                                <button type="button" class="button button-small" data-ichz-checkbox-action="clear" data-ichz-checkbox-target="#ichz-grouped-room-details">Clear</button>
+                            </div>
+                            <p class="description">Price and booking actions are always visible. Select the additional information guests should see.</p>
+                        </td>
+                    </tr>
+                    <tr valign="top" class="ichz-room-group-layout-row" style="<?php echo $room_view === 'room' ? '' : 'display:none;'; ?>">
+                        <th scope="row">Grouped Layout Type
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Choose the image presentation used when rooms are grouped by room type.</span>
+                            </span>
+                        </th>
+                        <td>
+                            <fieldset>
+                                <label style="display:block; margin-bottom:8px;">
+                                    <input type="radio" name="ichronoz_room_group_layout" value="small-image" <?php checked($room_group_layout, 'small-image'); ?> />
+                                    <strong>Small image</strong>
+                                    <span class="description">— Compact overview beside the room rates (current layout).</span>
+                                </label>
+                                <label style="display:block;">
+                                    <input type="radio" name="ichronoz_room_group_layout" value="regular-image" <?php checked($room_group_layout, 'regular-image'); ?> />
+                                    <strong>Regular image</strong>
+                                    <span class="description">— Larger image with room information beside it and rates below.</span>
+                                </label>
+                                <label style="display:block; margin-top:8px;">
+                                    <input type="radio" name="ichronoz_room_group_layout" value="compact-table" <?php checked($room_group_layout, 'compact-table'); ?> />
+                                    <strong>Compact rate table</strong>
+                                    <span class="description">— Concise room overview followed by aligned, easy-to-compare rate rows.</span>
+                                </label>
+                                <label style="display:block; margin-top:8px;">
+                                    <input type="radio" name="ichronoz_room_group_layout" value="promo-cards" <?php checked($room_group_layout, 'promo-cards'); ?> />
+                                    <strong>Promo cards</strong>
+                                    <span class="description">— Room overview on top with every promo displayed as a separate vertical card.</span>
+                                </label>
+                            </fieldset>
+                            <p class="description">Default: <code>small-image</code></p>
                         </td>
                     </tr>
                     <tr valign="top">
@@ -580,6 +779,12 @@ function ichronoz_settings_page()
                                 <a href="#" class="button-link" onclick="event.preventDefault(); var s=this.parentNode.previousElementSibling; if(s && s.tagName==='SELECT'){ s.value='vertical'; }">Reset</a>
                             </p>
                         </td>
+                    </tr>
+                    <tr class="ichz-settings-section">
+                        <th colspan="2">
+                            <span class="ichz-settings-section__title">Floating search button</span>
+                            <span class="ichz-settings-section__description">Control where the quick-search launcher appears and how it is styled.</span>
+                        </th>
                     </tr>
                     <tr valign="top">
                         <th scope="row">Floating Button Position <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Corner where the floating search button appears.</span></span></th>
@@ -622,13 +827,19 @@ function ichronoz_settings_page()
                             <input type="text" name="ichronoz_fab_border_color" id="ichronoz_fab_border_color" value="<?php echo $fab_border_color; ?>" class="ichronoz-color-field" data-default-color="#1566d1" />
                             <p class="description">Displayed only when transparency is enabled. Default: <code>#1566d1</code></p>
                             <script>
-                                jQuery(function($){
+                                jQuery(function($) {
                                     if ($.fn.wpColorPicker) {
                                         $('#ichronoz_fab_border_color').wpColorPicker();
                                     }
                                 });
                             </script>
                         </td>
+                    </tr>
+                    <tr class="ichz-settings-section">
+                        <th colspan="2">
+                            <span class="ichz-settings-section__title">Connection and booking page</span>
+                            <span class="ichz-settings-section__description">Connect your iChronoz account and define the booking transition experience.</span>
+                        </th>
                     </tr>
                     <tr valign="top">
                         <th scope="row">API Key <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Get API key from iChronoz dashboard.</span></span></th>
@@ -667,6 +878,12 @@ function ichronoz_settings_page()
                             </p>
                         </td>
                     </tr>
+                    <tr class="ichz-settings-section">
+                        <th colspan="2">
+                            <span class="ichz-settings-section__title">Multiple properties</span>
+                            <span class="ichz-settings-section__description">Optionally let guests choose between multiple hotel properties.</span>
+                        </th>
+                    </tr>
                     <tr valign="top">
                         <th scope="row">Is Multiproperty?
                             <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
@@ -696,29 +913,115 @@ function ichronoz_settings_page()
                 ?>
                     <tr>
                         <td colspan="2">
-                            <div style="max-width:820px">
+                            <div class="ichz-code-panel" style="max-width:920px">
                                 <h3>Shortcodes</h3>
                                 <p>Use these shortcodes in pages or posts to embed iChronoz components:</p>
-                                <ul style="list-style:disc; margin-left:20px">
+
+                                <h4>Component</h4>
+                                <ul class="ichz-shortcode-list">
                                     <li>
                                         <code id="sc-search-form">[ichronoz_search_form]</code>
                                         <button type="button" class="button button-small" data-copy-target="#sc-search-form">Copy</button>
+                                        <button type="button" class="button button-small" data-view-target="#sc-preview-search-form" data-view-title="Search Form Preview">Preview</button>
                                         — Renders the main search form.
-                                    </li>
-                                    <li>
-                                        <code id="sc-booking-page">[ichronoz_booking_page]</code>
-                                        <button type="button" class="button button-small" data-copy-target="#sc-booking-page">Copy</button>
-                                        — Renders the booking list page.
                                     </li>
                                     <li>
                                         <code id="sc-search-button">[ichronoz_search_button]</code>
                                         <button type="button" class="button button-small" data-copy-target="#sc-search-button">Copy</button>
+                                        <!-- <button type="button" class="button button-small" data-view-target="#sc-preview-search-button" data-view-title="Search Button Preview">Preview</button> -->
                                         — Adds a floating button that toggles the search form.
                                     </li>
+                                    <li>
+                                        <code id="sc-room-list">[ichronoz_room_list]</code>
+                                        <button type="button" class="button button-small" data-copy-target="#sc-room-list">Copy</button>
+                                        <button type="button" class="button button-small" data-view-target="#sc-preview-room-list" data-view-title="Room List Preview">Preview</button>
+                                        — Renders the room list component.
+                                    </li>
                                 </ul>
+
+                                <h4>Pages</h4>
+                                <ul class="ichz-shortcode-list">
+                                    <li>
+                                        <code id="sc-booking-page">[ichronoz_booking_page]</code>
+                                        <button type="button" class="button button-small" data-copy-target="#sc-booking-page">Copy</button>
+                                        <button type="button" class="button button-small" data-view-target="#sc-preview-booking-page" data-view-title="Booking Page Preview">Preview</button>
+                                        — Renders the booking list page.
+                                    </li>
+                                    <li>
+                                        <code id="sc-booking-page-multi">[ichronoz_booking_multi]</code>
+                                        <button type="button" class="button button-small" data-copy-target="#sc-booking-page-multi">Copy</button>
+                                        <button type="button" class="button button-small" data-view-target="#sc-preview-booking-page-multi" data-view-title="Booking Multi Preview">Preview</button>
+                                        — Renders the booking list page with multi-room selection controls.
+                                    </li>
+                                    <li>
+                                        <code id="sc-ticket-booking">[ichronoz_booking] / [ichronoz_booking type="activity-date"] / [ichronoz_booking type="activity-date,appointment-date"]</code>
+                                        <button type="button" class="button button-small" data-copy-target="#sc-ticket-booking">Copy</button>
+                                        <button type="button" class="button button-small" data-view-target="#sc-preview-ticket-booking" data-view-title="Ticket Booking Preview">Preview</button>
+                                        — Renders the booking page filtering by "type" with default "activity-date", example types: activity-date and appointment-date.
+                                    </li>
+                                </ul>
+                                <div id="sc-preview-search-form" style="display:none;"><?php echo do_shortcode('[ichronoz_search_form]'); ?></div>
+                                <div id="sc-preview-booking-page" style="display:none;"><?php echo do_shortcode('[ichronoz_booking_page]'); ?></div>
+                                <div id="sc-preview-booking-page-multi" style="display:none;"><?php echo do_shortcode('[ichronoz_booking_multi]'); ?></div>
+                                <div id="sc-preview-search-button" style="display:none;"><?php echo do_shortcode('[ichronoz_search_button]'); ?></div>
+                                <div id="sc-preview-ticket-booking" style="display:none;"><?php echo do_shortcode('[ichronoz_booking]'); ?></div>
+                                <div id="sc-preview-room-list" style="display:none;"><?php echo do_shortcode('[ichronoz_room_list]'); ?></div>
+                                <div id="ichz-shortcode-modal" style="display:none; position:fixed; z-index:100000; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+                                    <div role="dialog" aria-modal="true" aria-labelledby="ichz-shortcode-modal-title" style="background:#fff; width:100vw; height:100vh; border-radius:0; box-shadow:none; overflow:hidden;">
+                                        <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #dcdcde;">
+                                            <h3 id="ichz-shortcode-modal-title" style="margin:0; font-size:16px; line-height:1.3;">Shortcode</h3>
+                                            <button type="button" id="ichz-shortcode-modal-close" class="button button-small">Close</button>
+                                        </div>
+                                        <div style="padding:16px; overflow:auto; height:calc(100vh - 64px);">
+                                            <div id="ichz-shortcode-modal-value"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <style>
+                                    #ichz-shortcode-modal-value .card {
+                                        max-width: none !important;
+                                        width: auto !important;
+                                    }
+                                </style>
                                 <script>
                                     (function() {
+                                        var modal = document.getElementById('ichz-shortcode-modal');
+                                        var modalValue = document.getElementById('ichz-shortcode-modal-value');
+                                        var modalTitle = document.getElementById('ichz-shortcode-modal-title');
+                                        var modalClose = document.getElementById('ichz-shortcode-modal-close');
+
+                                        function openModal(title, html) {
+                                            if (!modal || !modalValue || !modalTitle) return;
+                                            modalTitle.textContent = title || 'Shortcode';
+                                            modalValue.innerHTML = html || '';
+                                            modal.style.display = 'flex';
+                                        }
+
+                                        function closeModal() {
+                                            if (!modal) return;
+                                            modal.style.display = 'none';
+                                        }
+
+                                        if (modalClose) {
+                                            modalClose.addEventListener('click', function(e) {
+                                                e.preventDefault();
+                                                closeModal();
+                                            });
+                                        }
+
                                         document.addEventListener('click', function(e) {
+                                            var viewBtn = e.target.closest('button[data-view-target]');
+                                            if (viewBtn) {
+                                                e.preventDefault();
+                                                var viewTarget = viewBtn.getAttribute('data-view-target');
+                                                var viewEl = viewTarget ? document.querySelector(viewTarget) : null;
+                                                var previewHtml = viewEl ? viewEl.innerHTML : '';
+                                                if (previewHtml) {
+                                                    openModal(viewBtn.getAttribute('data-view-title') || 'Shortcode', previewHtml);
+                                                }
+                                                return;
+                                            }
+
                                             var btn = e.target.closest('button[data-copy-target]');
                                             if (!btn) return;
                                             e.preventDefault();
@@ -762,6 +1065,16 @@ function ichronoz_settings_page()
                                                 } catch (_) {}
                                             }
                                         });
+
+                                        document.addEventListener('keydown', function(e) {
+                                            if (e.key === 'Escape') closeModal();
+                                        });
+
+                                        if (modal) {
+                                            modal.addEventListener('click', function(e) {
+                                                if (e.target === modal) closeModal();
+                                            });
+                                        }
                                     })();
                                 </script>
                                 <h4>Examples</h4>
@@ -772,7 +1085,8 @@ function ichronoz_settings_page()
                                 <p>
                                     - Colors and layout: adjust under <strong>UI Settings</strong>.<br />
                                     - Booking path and API key: configure under <strong>General</strong>.<br />
-                                    - Optional scripts for booking/detail pages: add under <strong>Scripts</strong>.
+                                    - Optional scripts for booking/detail pages: add under <strong>Custom Code</strong>.<br />
+                                    - Booking analytics and Google Tag Manager: configure under <strong>Analytics</strong>.
                                 </p>
                                 <h4>Notes</h4>
                                 <p>
@@ -783,6 +1097,12 @@ function ichronoz_settings_page()
                     </tr>
                 <?php elseif ($active_tab === 'ui'): // UI Settings tab 
                 ?>
+                    <tr class="ichz-settings-section">
+                        <th colspan="2">
+                            <span class="ichz-settings-section__title">Shape and detail header</span>
+                            <span class="ichz-settings-section__description">Control corner rounding and the gradient used on detail pages.</span>
+                        </th>
+                    </tr>
                     <tr valign="top">
                         <th scope="row">Round Buttons
                             <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
@@ -809,17 +1129,23 @@ function ichronoz_settings_page()
                         </td>
                     </tr>
                     <tr valign="top">
-                        <th scope="row">Gradient Colors (3 colors)
+                        <th scope="row">Detail Header Gradient
                             <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
-                                <span class="ichz-tip">Provide three colors for the detail page gradient header. Accepts comma or space separated values, e.g. <code>#0d6efd, #6c757d, #20c997</code>. Leaves empty to fallback to other UI colors.</span>
+                                <span class="ichz-tip">Provide three gradient colors followed by the text color. Leave empty to use the standard UI palette.</span>
                             </span>
                         </th>
                         <td>
                             <input type="text" name="ichronoz_gradient_colors" value="<?php echo esc_attr(get_option('ichronoz_gradient_colors', '')); ?>" class="regular-text" placeholder="#1a2f78, #1870c9, #5195e3, #FFFFFF" />
-                            <p class="description">Three colors, comma or space separated, with the last color for font color. Example: <code>#0d6efd, #6c757d, #20c997, #FFFFFF</code>
+                            <p class="description">Three gradient colors followed by the text color, separated by commas or spaces. Example: <code>#0d6efd, #6c757d, #20c997, #FFFFFF</code>
                                 <a href="#" class="button-link" onclick="event.preventDefault(); var i=this.parentNode.previousElementSibling; if(i){ i.value=''; }">Clear</a>
                             </p>
                         </td>
+                    </tr>
+                    <tr class="ichz-settings-section">
+                        <th colspan="2">
+                            <span class="ichz-settings-section__title">Brand and component colors</span>
+                            <span class="ichz-settings-section__description">Set the primary palette and colors for interactive booking elements.</span>
+                        </th>
                     </tr>
                     <!-- <tr valign="top">
                         <th scope="row">Selected Day Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Accent color for selected days in the calendar.</span></span></th>
@@ -870,9 +1196,9 @@ function ichronoz_settings_page()
                     <tr valign="top">
                         <th scope="row">Link Color <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span><span class="ichz-tip">Overrides link color. Leave empty to inherit theme.</span></span></th>
                         <td>
-                            <input type="text" name="ichronoz_link_color" value="<?php echo esc_attr(!empty(get_option('ichronoz_link_color')) ? get_option('ichronoz_link_color') : '#1566d1'); ?>" class="color-picker" />
+                            <input type="text" name="ichronoz_link_color" value="<?php echo esc_attr(get_option('ichronoz_link_color', '')); ?>" class="color-picker" />
                             <p class="description">Default: inherit theme (empty)
-                                <a href="#" class="button-link" data-default-color="#1566d1">Reset</a>
+                                <a href="#" class="button-link" data-default-color="">Reset</a>
                             </p>
                         </td>
                     </tr>
@@ -896,6 +1222,8 @@ function ichronoz_settings_page()
                     </tr>
                 <?php endif; ?>
             </table>
+            </div>
+            <?php endif; ?>
             <?php if ($active_tab === 'ui'): ?>
                 <p>
                     <button type="button" class="button" id="ichz-reset-all-ui-colors">Reset All UI Colors</button>
@@ -903,85 +1231,97 @@ function ichronoz_settings_page()
                 <!-- Reset All handled in js/color-picker.js -->
             <?php elseif ($active_tab === 'scripts'): // Scripts injection tab 
             ?>
-                <tr valign="top">
-                    <th scope="row">Custom CSS
-                        <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
-                            <span class="ichz-tip">Add CSS to customize iChronoz components. Prefer scoping with .ichronoz to affect only the widget.</span>
-                        </span>
-                    </th>
-                    <td>
-                        <textarea name="ichronoz_custom_css" rows="10" class="large-text code" placeholder=".ichronoz .btn { background: #1e88e5; }\n.ichronoz .card { border-radius: 8px; }\n"><?php echo esc_textarea(get_option('ichronoz_custom_css', '')); ?></textarea>
-                        <p class="description">Raw CSS only; HTML tags are stripped. Enqueued after plugin styles.</p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Booking Page Script
-                        <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
-                            <span class="ichz-tip">Runs on the booking list page. Paste raw JS or a &lt;script&gt;...&lt;/script&gt; snippet. Admins only.</span>
-                        </span>
-                    </th>
-                    <td>
-                        <label style="display:inline-flex; align-items:center; gap:8px; margin-bottom:6px;">
-                            <input type="checkbox" name="ichronoz_booking_script_enabled" value="1" <?php checked(get_option('ichronoz_booking_script_enabled', '0'), '1'); ?> />
-                            <span>Enable booking page script</span>
+                <div class="notice notice-info inline" style="margin:16px 0;">
+                    <p><strong>Google Tag Manager belongs in Analytics.</strong> Use Custom Code only for page-specific JavaScript and CSS. This helps prevent duplicate GTM containers and duplicated conversions.</p>
+                </div>
+                <?php if (ichronoz_analytics_custom_code_has_gtm()): ?>
+                    <div class="notice notice-warning inline" style="margin:16px 0;">
+                        <p>GTM-related code is currently detected in these custom scripts. Remove it manually before enabling “Install GTM through iChronoz”. Existing user code is never removed automatically.</p>
+                    </div>
+                <?php endif; ?>
+                <div class="ichz-settings-card">
+                    <section class="ichz-code-panel">
+                        <h3>Custom CSS
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Add CSS to customize iChronoz components. Prefer scoping with .ichronoz to affect only the widget.</span>
+                            </span>
+                        </h3>
+                        <p class="description">Loaded after plugin styles. Scope selectors with <code>.ichronoz</code> to prevent changes outside the booking interface.</p>
+                        <textarea name="ichronoz_custom_css" rows="10" class="large-text code" aria-label="Custom CSS" placeholder=".ichronoz .btn { background: #1e88e5; }\n.ichronoz .card { border-radius: 8px; }\n"><?php echo esc_textarea(get_option('ichronoz_custom_css', '')); ?></textarea>
+                    </section>
+                    <section class="ichz-code-panel">
+                        <h3>Booking page script</h3>
+                        <input type="hidden" name="ichronoz_booking_script_enabled" value="0" />
+                        <label>
+                            <input type="checkbox" name="ichronoz_booking_script_enabled" value="1" data-ichz-script-toggle="#ichronoz-booking-script" <?php checked(get_option('ichronoz_booking_script_enabled', '0'), '1'); ?> />
+                            Enable booking page script
                         </label>
-                        <textarea name="ichronoz_booking_script" rows="8" class="large-text code"><?php echo esc_textarea(get_option('ichronoz_booking_script', '')); ?></textarea>
-                        <p class="description">This code will be injected when the booking page visited. Only paste code from trusted sources. Inline scripts run with your site's privileges.</p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Detail Page Script
-                        <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
-                            <span class="ichz-tip">Runs on the room detail page. Paste raw JS or a &lt;script&gt;...&lt;/script&gt; snippet. Admins only.</span>
-                        </span>
-                    </th>
-                    <td>
-                        <label style="display:inline-flex; align-items:center; gap:8px; margin-bottom:6px;">
-                            <input type="checkbox" name="ichronoz_detail_script_enabled" value="1" <?php checked(get_option('ichronoz_detail_script_enabled', '0'), '1'); ?> />
-                            <span>Enable detail page script</span>
+                        <textarea id="ichronoz-booking-script" name="ichronoz_booking_script" rows="8" class="large-text code"><?php echo esc_textarea(get_option('ichronoz_booking_script', '')); ?></textarea>
+                        <p class="description">Runs on the booking list page. Only use code from trusted sources.</p>
+                    </section>
+                    <section class="ichz-code-panel">
+                        <h3>Detail page script</h3>
+                        <input type="hidden" name="ichronoz_detail_script_enabled" value="0" />
+                        <label>
+                            <input type="checkbox" name="ichronoz_detail_script_enabled" value="1" data-ichz-script-toggle="#ichronoz-detail-script" <?php checked(get_option('ichronoz_detail_script_enabled', '0'), '1'); ?> />
+                            Enable detail page script
                         </label>
-                        <textarea name="ichronoz_detail_script" rows="8" class="large-text code"><?php echo esc_textarea(get_option('ichronoz_detail_script', '')); ?></textarea>
-                        <p class="description">This code will be injected when the room detail visited. Only paste code from trusted sources. Inline scripts run with your site's privileges.</p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">Sanitization Mode
-                        <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
-                            <span class="ichz-tip">Choose how to sanitize the script before exposing to the frontend. Raw allows full code. Strip tags removes &lt;script&gt; wrappers. KSES strips most HTML (JS likely removed).</span>
-                        </span>
-                    </th>
-                    <td>
+                        <textarea id="ichronoz-detail-script" name="ichronoz_detail_script" rows="8" class="large-text code"><?php echo esc_textarea(get_option('ichronoz_detail_script', '')); ?></textarea>
+                        <p class="description">Runs on the room detail page. Only use code from trusted sources.</p>
+                    </section>
+                    <section class="ichz-code-panel">
+                        <h3>Security and execution</h3>
                         <?php $san_mode = get_option('ichronoz_script_sanitization', 'raw'); ?>
-                        <select name="ichronoz_script_sanitization">
-                            <option value="raw" <?php selected($san_mode, 'raw'); ?>>Raw (no filtering)</option>
-                            <option value="strip_tags" <?php selected($san_mode, 'strip_tags'); ?>>Strip &lt;script&gt; tags</option>
-                            <option value="kses" <?php selected($san_mode, 'kses'); ?>>KSES (limited HTML)</option>
-                        </select>
-                        <p class="description">If unsure, choose <strong>Raw</strong> for analytics or custom JS snippets you trust.</p>
-                    </td>
-                </tr>
-                <tr valign="top">
-                    <th scope="row">CSP Nonce (optional)
-                        <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
-                            <span class="ichz-tip">If your site enforces a Content Security Policy with nonces, provide the nonce value here. It will be set on injected &lt;script&gt; tags.</span>
-                        </span>
-                    </th>
-                    <td>
-                        <input type="text" name="ichronoz_csp_nonce" value="<?php echo esc_attr(get_option('ichronoz_csp_nonce', '')); ?>" class="regular-text" />
-                        <p class="description">Leave empty if you don't use CSP nonces.</p>
-                    </td>
-                </tr>
+                        <p>
+                            <label for="ichronoz-script-sanitization"><strong>Sanitization mode</strong></label><br />
+                            <select id="ichronoz-script-sanitization" name="ichronoz_script_sanitization">
+                                <option value="raw" <?php selected($san_mode, 'raw'); ?>>Raw (no filtering)</option>
+                                <option value="strip_tags" <?php selected($san_mode, 'strip_tags'); ?>>Strip &lt;script&gt; tags</option>
+                                <option value="kses" <?php selected($san_mode, 'kses'); ?>>KSES (limited HTML)</option>
+                            </select>
+                        </p>
+                        <p class="description">Raw mode permits full JavaScript and should only be used for code you trust.</p>
+                        <p>
+                            <label for="ichronoz-csp-nonce"><strong>CSP nonce (optional)</strong></label><br />
+                            <input id="ichronoz-csp-nonce" type="text" name="ichronoz_csp_nonce" value="<?php echo esc_attr(get_option('ichronoz_csp_nonce', '')); ?>" class="regular-text" />
+                        </p>
+                        <p class="description">Leave empty unless your site enforces a Content Security Policy with nonces.</p>
+                    </section>
+                </div>
             <?php endif; ?>
-            <?php submit_button(); ?>
-        </form>
+            <?php if ($has_settings_form): ?>
+                <?php submit_button(); ?>
+            </form>
+            <?php endif; ?>
+        <?php endif; ?>
 
         <script>
             (function() {
+                // Grouped layout type is only relevant for the grouped room-list view.
+                var roomView = document.getElementById('ichronoz_room_card_type');
+                var roomDetailsRow = document.getElementById('ichz-room-details-row');
+                var roomGroupLayoutRows = document.querySelectorAll('.ichz-room-group-layout-row');
+                if (roomDetailsRow) {
+                    roomDetailsRow.hidden = false;
+                    roomDetailsRow.style.removeProperty('display');
+                }
+                if (roomView && roomGroupLayoutRows.length) {
+                    function syncRoomGroupLayout() {
+                        roomGroupLayoutRows.forEach(function(row) {
+                            row.style.display = roomView.value === 'room' ? '' : 'none';
+                        });
+                    }
+                    roomView.addEventListener('change', syncRoomGroupLayout);
+                    syncRoomGroupLayout();
+                }
+
                 // Show/hide FAB border color when transparency toggled
                 var fabCb = document.querySelector('input[name="ichronoz_fab_transparent"]');
                 var fabRow = document.querySelector('tr.ichz-fab-border-row');
                 if (fabCb && fabRow) {
-                    function syncFab() { fabRow.style.display = fabCb.checked ? '' : 'none'; }
+                    function syncFab() {
+                        fabRow.style.display = fabCb.checked ? '' : 'none';
+                    }
                     fabCb.addEventListener('change', syncFab);
                     syncFab();
                 }
@@ -1111,6 +1451,17 @@ function ichronoz_add_settings_page()
 }
 
 add_shortcode('ichronoz_search_form', 'ichronoz_shortcode');
+/**
+ * Shortcode: [ichronoz_room_list]
+ * Renders a lightweight room carousel (3-up) without the booking form.
+ */
+function ichronoz_room_list_shortcode()
+{
+    ichronoz_enqueue_scripts();
+    do_action('ichronoz_rendered_room_list');
+    return '<div class="ichronoz"><div data-ichronoz-mount="room-list"></div></div>';
+}
+add_shortcode('ichronoz_room_list', 'ichronoz_room_list_shortcode');
 add_action('admin_init', 'ichronoz_register_settings');
 add_action('admin_menu', 'ichronoz_add_settings_page');
 
@@ -1233,6 +1584,10 @@ function ichronoz_handle_github_update()
     return true;
 }
 
+/**
+ * Shortcode: [ichronoz_booking_page]
+ * Renders booking list with single-room selection controls.
+ */
 function ichronoz_booking_page_shortcode()
 {
     // Load assets only when booking shortcode is present
@@ -1241,6 +1596,37 @@ function ichronoz_booking_page_shortcode()
     return '<div class="ichronoz"><div data-ichronoz-mount="booking"></div></div>';
 }
 add_shortcode('ichronoz_booking_page', 'ichronoz_booking_page_shortcode');
+
+/**
+ * Shortcode: [ichronoz_booking_multi]
+ * Renders booking list with multi-room selection controls.
+ */
+function ichronoz_booking_multi_shortcode()
+{
+    ichronoz_enqueue_scripts();
+    do_action('ichronoz_rendered_booking_page');
+    return '<div class="ichronoz"><div data-ichronoz-mount="booking" data-enable-multi-select="1"></div></div>';
+}
+add_shortcode('ichronoz_booking_multi', 'ichronoz_booking_multi_shortcode');
+
+/**
+ * Shortcode: [ichronoz_booking]
+ * Renders ticket-specific booking flow.
+ */
+function ichronoz_booking_shortcode($atts = array())
+{
+    $atts = shortcode_atts(array(
+        'type' => 'activity-date',
+        'accType' => '',
+    ), (array) $atts, 'ichronoz_booking');
+    $acc_type = sanitize_text_field((string) ($atts['type'] !== '' ? $atts['type'] : $atts['accType']));
+    if ($acc_type === '') $acc_type = 'activity-date';
+
+    ichronoz_enqueue_scripts();
+    do_action('ichronoz_rendered_ticket_booking_page');
+    return '<div class="ichronoz"><div data-ichronoz-mount="ticket-booking" data-acc-type="' . esc_attr($acc_type) . '"></div></div>';
+}
+add_shortcode('ichronoz_booking', 'ichronoz_booking_shortcode');
 
 /**
  * Shortcode: [ichronoz_search_button]
@@ -1283,18 +1669,20 @@ function ichronoz_search_button_shortcode()
 add_shortcode('ichronoz_search_button', 'ichronoz_search_button_shortcode');
 
 add_action('wp_footer', function () {
-    // Show floating button only if no iChronoz search/booking shortcodes are present on the page
+    // Show floating button only if no iChronoz search/booking/ticket shortcodes are present on the page
     if (is_admin()) return;
 
     $has_form = false;
     $has_booking = false;
+    $has_ticket = false;
 
     // Check the global post content for shortcodes when available
     global $post;
     if ($post && isset($post->post_content)) {
         $content = $post->post_content;
         $has_form = has_shortcode($content, 'ichronoz_search_form');
-        $has_booking = has_shortcode($content, 'ichronoz_booking_page');
+        $has_booking = has_shortcode($content, 'ichronoz_booking_page') || has_shortcode($content, 'ichronoz_booking_multi');
+        $has_ticket = has_shortcode($content, 'ichronoz_booking');
     }
 
     // Additionally, detect if our mount points already exist (rendered by other means)
@@ -1302,8 +1690,9 @@ add_action('wp_footer', function () {
     // we can rely on wp query var flag set during shortcode render.
     if (did_action('ichronoz_rendered_search_form')) $has_form = true;
     if (did_action('ichronoz_rendered_booking_page')) $has_booking = true;
+    if (did_action('ichronoz_rendered_ticket_booking_page')) $has_ticket = true;
 
-    if (!$has_form && !$has_booking) {
+    if (!$has_form && !$has_booking && !$has_ticket) {
         echo do_shortcode('[ichronoz_search_button]');
     }
 });

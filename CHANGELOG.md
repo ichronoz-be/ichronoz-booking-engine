@@ -4,6 +4,32 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.1] - 2026-09-26
+
+### Added
+- Added multi-room booking through the `[ichronoz_booking_multi]` shortcode, including combined checkout, guest details, payment selection, tax, and deposit summaries.
+- Added activity, ticket, and appointment booking through the `[ichronoz_booking]` shortcode with product-type filtering, quantities, participant details, promo codes, and payment selection.
+- Added a lightweight room carousel through the `[ichronoz_room_list]` shortcode.
+- Added four grouped-room presentation options: small image, regular image, compact rate table, and promo cards.
+- Added an internal booking analytics dashboard for availability searches, booking funnel events, conversion rate, failed submissions, and optional booking values.
+- Added Google Tag Manager and `dataLayer` integration with configurable container installation, page scope, event name, and transaction-value tracking.
+- Added a payment-return status page covering paid, pending, failed, cancelled, expired, refunded, and unknown payment states, with retry support.
+- Added room galleries, image carousel modals, amenities, expandable descriptions, service details, tax information, booking reassurance, and a mobile booking bar.
+- Added reusable fallback images for rooms and products whose images are unavailable.
+- Added returning-guest lookup by email to prefill guest details during checkout.
+- Added independently configurable scripts for booking and detail pages, including sanitization and CSP nonce support.
+
+### Changed
+- Reorganized the WordPress settings page into General, UI Settings, Custom Code, Analytics, and How to Use tabs, with shortcode copy and preview controls.
+- Split the React frontend into independently loaded search, booking, room-list, and ticket-booking mounts to reduce unnecessary page initialization.
+- Reorganized frontend code into feature, mount, and shared modules for reusable API, pricing, analytics, checkout, form, image, and styling logic.
+- Enhanced grouped-room layouts, room cards, booking summaries, currency conversion, promo banners, and mobile responsiveness.
+
+### Fixed
+- Improved booking-status response validation and payment-return error handling.
+- Improved debug logging without exposing payment tokens or sensitive guest data.
+- Fixed guest lookup API handling and promo-banner behavior.
+
 ## [3.0.7] - 2026-06-21
 
 ### Fixed
@@ -73,4 +99,3 @@ How to update this changelog:
 - Add a new section under `[Unreleased]` for changes you make.
 - When releasing, move items from `[Unreleased]` into a new version section: `[x.y.z] - YYYY-MM-DD`.
 - Group entries with these tags when possible: Added, Changed, Fixed, Removed.
-
