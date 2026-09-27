@@ -3,7 +3,7 @@
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
- * Version: 3.1.0
+ * Version: 3.1.1
  * Author: iChronoz
  */
 
@@ -65,6 +65,48 @@ function ichronoz_sanitize_grouped_room_details($value)
     $selected = array_map('sanitize_key', $value);
 
     return array_values(array_intersect($allowed, $selected));
+}
+
+/**
+ * Sanitize bounded numeric promo-nudge settings.
+ */
+function ichronoz_sanitize_promo_minimum_searches($value)
+{
+    return max(1, min(20, absint($value)));
+}
+
+function ichronoz_sanitize_promo_minimum_seconds($value)
+{
+    return max(0, min(3600, absint($value)));
+}
+
+function ichronoz_sanitize_promo_delay_ms($value)
+{
+    return max(0, min(10000, absint($value)));
+}
+
+function ichronoz_sanitize_promo_dismiss_hours($value)
+{
+    return max(0, min(8760, absint($value)));
+}
+
+function ichronoz_sanitize_promo_maximum_visible($value)
+{
+    return max(1, min(10, absint($value)));
+}
+
+function ichronoz_sanitize_rooms_carousel_autoplay($value)
+{
+    return max(0, min(60, absint($value)));
+}
+
+function ichronoz_sanitize_rooms_carousel_position($value)
+{
+    $value = sanitize_key((string) $value);
+
+    return in_array($value, array('bottom-right', 'bottom-left', 'top-right', 'top-left'), true)
+        ? $value
+        : 'bottom-right';
 }
 
 function ichronoz_admin_enqueue_scripts($hook)
@@ -245,6 +287,23 @@ function ichronoz_enqueue_scripts()
     $loading_message = get_option('ichronoz_loading_message', 'Searching for the best rate within your requested period: {fromLong} - {toShort}');
     $spinner_url = get_option('ichronoz_spinner_url', '/wp-admin/images/spinner.gif');
     $calendar_range_bg = get_option('ichronoz_calendar_range_bg', '#e3f2ff');
+    $promo_nudge_config = array(
+        'enabled' => get_option('ichronoz_promo_nudge_enabled', '0') === '1',
+        'minimumSearches' => ichronoz_sanitize_promo_minimum_searches(get_option('ichronoz_promo_nudge_minimum_searches', 3)),
+        'minimumSecondsOnPage' => ichronoz_sanitize_promo_minimum_seconds(get_option('ichronoz_promo_nudge_minimum_seconds', 30)),
+        'alwaysShowAfterMinimumTime' => get_option('ichronoz_promo_nudge_always_after_time', '0') === '1',
+        'delayAfterSearchMs' => ichronoz_sanitize_promo_delay_ms(get_option('ichronoz_promo_nudge_delay_ms', 800)),
+        'showOncePerSession' => get_option('ichronoz_promo_nudge_show_once', '1') === '1',
+        'dismissHours' => ichronoz_sanitize_promo_dismiss_hours(get_option('ichronoz_promo_nudge_dismiss_hours', 24)),
+        'maximumVisiblePromos' => ichronoz_sanitize_promo_maximum_visible(get_option('ichronoz_promo_nudge_maximum_visible', 3)),
+    );
+    $rooms_carousel_config = array(
+        'subheading' => sanitize_text_field(get_option('ichronoz_rooms_carousel_subheading', 'Stay period')),
+        'buttonLabel' => sanitize_text_field(get_option('ichronoz_rooms_carousel_button_label', 'Book Room Now')),
+        'autoplaySeconds' => ichronoz_sanitize_rooms_carousel_autoplay(get_option('ichronoz_rooms_carousel_autoplay', 5)),
+        'dismissible' => get_option('ichronoz_rooms_carousel_dismissible', '1') === '1',
+        'position' => ichronoz_sanitize_rooms_carousel_position(get_option('ichronoz_rooms_carousel_position', 'bottom-right')),
+    );
     $room_group_layout = ichronoz_sanitize_room_group_layout(
         get_option('ichronoz_room_group_layout', 'small-image')
     );
@@ -331,6 +390,8 @@ function ichronoz_enqueue_scripts()
         'hidEnabled' => $hid_enabled,
         'hidOptions' => $hid_options,
         'gradientColors' => $gradient_colors,
+        'promoNudge' => $promo_nudge_config,
+        'roomsCarousel' => $rooms_carousel_config,
         'fabTransparent' => $fab_transparent,
         'fabBorderColor' => $fab_border_color,
         'analytics' => ichronoz_analytics_runtime_config(),
@@ -391,6 +452,19 @@ function ichronoz_register_settings()
     add_option('ichronoz_room_group_layout', 'small-image');
     // Optional sections shown inside each grouped rate card.
     add_option('ichronoz_grouped_room_details', array_keys(ichronoz_get_grouped_room_detail_options()));
+    add_option('ichronoz_promo_nudge_enabled', '0');
+    add_option('ichronoz_promo_nudge_minimum_searches', 3);
+    add_option('ichronoz_promo_nudge_minimum_seconds', 30);
+    add_option('ichronoz_promo_nudge_always_after_time', '0');
+    add_option('ichronoz_promo_nudge_delay_ms', 800);
+    add_option('ichronoz_promo_nudge_show_once', '1');
+    add_option('ichronoz_promo_nudge_dismiss_hours', 24);
+    add_option('ichronoz_promo_nudge_maximum_visible', 3);
+    add_option('ichronoz_rooms_carousel_subheading', 'Stay period');
+    add_option('ichronoz_rooms_carousel_button_label', 'Book Room Now');
+    add_option('ichronoz_rooms_carousel_autoplay', 5);
+    add_option('ichronoz_rooms_carousel_dismissible', '1');
+    add_option('ichronoz_rooms_carousel_position', 'bottom-right');
     // Split settings into per-tab groups to prevent cross-tab resets
     // General group
     register_setting('ichronoz_general_group', 'ichronoz_form_layout');
@@ -411,6 +485,27 @@ function ichronoz_register_settings()
             'type' => 'string',
             'sanitize_callback' => 'ichronoz_sanitize_room_group_layout',
             'default' => 'small-image',
+        )
+    );
+    register_setting('ichronoz_general_group', 'ichronoz_promo_nudge_enabled', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_promo_nudge_minimum_searches', array('sanitize_callback' => 'ichronoz_sanitize_promo_minimum_searches'));
+    register_setting('ichronoz_general_group', 'ichronoz_promo_nudge_minimum_seconds', array('sanitize_callback' => 'ichronoz_sanitize_promo_minimum_seconds'));
+    register_setting('ichronoz_general_group', 'ichronoz_promo_nudge_always_after_time', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_promo_nudge_delay_ms', array('sanitize_callback' => 'ichronoz_sanitize_promo_delay_ms'));
+    register_setting('ichronoz_general_group', 'ichronoz_promo_nudge_show_once', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_promo_nudge_dismiss_hours', array('sanitize_callback' => 'ichronoz_sanitize_promo_dismiss_hours'));
+    register_setting('ichronoz_general_group', 'ichronoz_promo_nudge_maximum_visible', array('sanitize_callback' => 'ichronoz_sanitize_promo_maximum_visible'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_subheading', array('sanitize_callback' => 'sanitize_text_field'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_button_label', array('sanitize_callback' => 'sanitize_text_field'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_autoplay', array('sanitize_callback' => 'ichronoz_sanitize_rooms_carousel_autoplay'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_dismissible', array('sanitize_callback' => 'absint'));
+    register_setting(
+        'ichronoz_general_group',
+        'ichronoz_rooms_carousel_position',
+        array(
+            'type' => 'string',
+            'sanitize_callback' => 'ichronoz_sanitize_rooms_carousel_position',
+            'default' => 'bottom-right',
         )
     );
     register_setting(
@@ -837,6 +932,86 @@ function ichronoz_settings_page()
                     </tr>
                     <tr class="ichz-settings-section">
                         <th colspan="2">
+                            <span class="ichz-settings-section__title">Promo suggestion popup</span>
+                            <span class="ichz-settings-section__description">Control when eligible promotion codes returned by the API are suggested to guests.</span>
+                        </th>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Enable Promo Suggestions</th>
+                        <td>
+                            <input type="hidden" name="ichronoz_promo_nudge_enabled" value="0" />
+                            <label><input type="checkbox" name="ichronoz_promo_nudge_enabled" value="1" <?php checked(get_option('ichronoz_promo_nudge_enabled', '0'), '1'); ?> /> Show eligible API promotions</label>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_promo_nudge_minimum_searches">Minimum Searches</label></th>
+                        <td><input id="ichronoz_promo_nudge_minimum_searches" type="number" name="ichronoz_promo_nudge_minimum_searches" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_minimum_searches', 3)); ?>" min="1" max="20" step="1" class="small-text" /><p class="description">User-initiated searches required before showing the popup. Default: <code>3</code>.</p></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_promo_nudge_minimum_seconds">Minimum Time on Page</label></th>
+                        <td><input id="ichronoz_promo_nudge_minimum_seconds" type="number" name="ichronoz_promo_nudge_minimum_seconds" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_minimum_seconds', 30)); ?>" min="0" max="3600" step="1" class="small-text" /> seconds<p class="description">Use <code>0</code> to disable the time requirement.</p></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Always Show After Minimum Time</th>
+                        <td>
+                            <input type="hidden" name="ichronoz_promo_nudge_always_after_time" value="0" />
+                            <label><input type="checkbox" name="ichronoz_promo_nudge_always_after_time" value="1" <?php checked(get_option('ichronoz_promo_nudge_always_after_time', '0'), '1'); ?> /> Show eligible promos when the minimum time is reached, without waiting for Minimum Searches</label>
+                            <p class="description">Campaign eligibility, dismissal cooldown, and show-once settings still apply.</p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_promo_nudge_delay_ms">Delay After Search</label></th>
+                        <td><input id="ichronoz_promo_nudge_delay_ms" type="number" name="ichronoz_promo_nudge_delay_ms" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_delay_ms', 800)); ?>" min="0" max="10000" step="100" class="small-text" /> milliseconds<p class="description">Delay after eligible results finish loading. Default: <code>800</code> ms.</p></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Show Frequency</th>
+                        <td><input type="hidden" name="ichronoz_promo_nudge_show_once" value="0" /><label><input type="checkbox" name="ichronoz_promo_nudge_show_once" value="1" <?php checked(get_option('ichronoz_promo_nudge_show_once', '1'), '1'); ?> /> Show each campaign only once per browser session</label></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_promo_nudge_dismiss_hours">Dismiss Cooldown</label></th>
+                        <td><input id="ichronoz_promo_nudge_dismiss_hours" type="number" name="ichronoz_promo_nudge_dismiss_hours" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_dismiss_hours', 24)); ?>" min="0" max="8760" step="1" class="small-text" /> hours<p class="description">How long a dismissed campaign remains hidden.</p></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_promo_nudge_maximum_visible">Maximum Visible Promos</label></th>
+                        <td><input id="ichronoz_promo_nudge_maximum_visible" type="number" name="ichronoz_promo_nudge_maximum_visible" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_maximum_visible', 3)); ?>" min="1" max="10" step="1" class="small-text" /><p class="description">Maximum eligible offers shown in the popup. Default: <code>3</code>.</p></td>
+                    </tr>
+                    <tr class="ichz-settings-section">
+                        <th colspan="2">
+                            <span class="ichz-settings-section__title">Rooms carousel shortcode</span>
+                            <span class="ichz-settings-section__description">Configure the compact offer carousel rendered by <code>[ichronoz_rooms_carousel]</code>.</span>
+                        </th>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_rooms_carousel_subheading">Stay Label</label></th>
+                        <td><input id="ichronoz_rooms_carousel_subheading" type="text" name="ichronoz_rooms_carousel_subheading" value="<?php echo esc_attr(get_option('ichronoz_rooms_carousel_subheading', 'Stay period')); ?>" class="regular-text" /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_rooms_carousel_button_label">Button Label</label></th>
+                        <td><input id="ichronoz_rooms_carousel_button_label" type="text" name="ichronoz_rooms_carousel_button_label" value="<?php echo esc_attr(get_option('ichronoz_rooms_carousel_button_label', 'Book Room Now')); ?>" class="regular-text" /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_rooms_carousel_autoplay">Autoplay Interval</label></th>
+                        <td><input id="ichronoz_rooms_carousel_autoplay" type="number" name="ichronoz_rooms_carousel_autoplay" value="<?php echo esc_attr(get_option('ichronoz_rooms_carousel_autoplay', 5)); ?>" min="0" max="60" class="small-text" /> seconds<p class="description">Use <code>0</code> to disable automatic sliding.</p></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Close Button</th>
+                        <td><input type="hidden" name="ichronoz_rooms_carousel_dismissible" value="0" /><label><input type="checkbox" name="ichronoz_rooms_carousel_dismissible" value="1" <?php checked(get_option('ichronoz_rooms_carousel_dismissible', '1'), '1'); ?> /> Allow visitors to dismiss the carousel</label></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_rooms_carousel_position">Carousel Position</label></th>
+                        <td>
+                            <?php $rooms_carousel_position = ichronoz_sanitize_rooms_carousel_position(get_option('ichronoz_rooms_carousel_position', 'bottom-right')); ?>
+                            <select id="ichronoz_rooms_carousel_position" name="ichronoz_rooms_carousel_position">
+                                <option value="bottom-right" <?php selected($rooms_carousel_position, 'bottom-right'); ?>>Bottom right</option>
+                                <option value="bottom-left" <?php selected($rooms_carousel_position, 'bottom-left'); ?>>Bottom left</option>
+                                <option value="top-right" <?php selected($rooms_carousel_position, 'top-right'); ?>>Top right</option>
+                                <option value="top-left" <?php selected($rooms_carousel_position, 'top-left'); ?>>Top left</option>
+                            </select>
+                            <p class="description">Controls the viewport position of both the carousel and its collapsed Room Offers button.</p>
+                        </td>
+                    </tr>
+                    <tr class="ichz-settings-section">
+                        <th colspan="2">
                             <span class="ichz-settings-section__title">Connection and booking page</span>
                             <span class="ichz-settings-section__description">Connect your iChronoz account and define the booking transition experience.</span>
                         </th>
@@ -937,6 +1112,12 @@ function ichronoz_settings_page()
                                         <button type="button" class="button button-small" data-view-target="#sc-preview-room-list" data-view-title="Room List Preview">Preview</button>
                                         — Renders the room list component.
                                     </li>
+                                    <li>
+                                        <code id="sc-rooms-carousel">[ichronoz_rooms_carousel]</code>
+                                        <button type="button" class="button button-small" data-copy-target="#sc-rooms-carousel">Copy</button>
+                                        <button type="button" class="button button-small" data-view-target="#sc-preview-rooms-carousel" data-view-title="Rooms Carousel Preview">Preview</button>
+                                        — Renders the compact room offer carousel.
+                                    </li>
                                 </ul>
 
                                 <h4>Pages</h4>
@@ -966,6 +1147,7 @@ function ichronoz_settings_page()
                                 <div id="sc-preview-search-button" style="display:none;"><?php echo do_shortcode('[ichronoz_search_button]'); ?></div>
                                 <div id="sc-preview-ticket-booking" style="display:none;"><?php echo do_shortcode('[ichronoz_booking]'); ?></div>
                                 <div id="sc-preview-room-list" style="display:none;"><?php echo do_shortcode('[ichronoz_room_list]'); ?></div>
+                                <div id="sc-preview-rooms-carousel" style="display:none;"><?php echo do_shortcode('[ichronoz_rooms_carousel]'); ?></div>
                                 <div id="ichz-shortcode-modal" style="display:none; position:fixed; z-index:100000; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
                                     <div role="dialog" aria-modal="true" aria-labelledby="ichz-shortcode-modal-title" style="background:#fff; width:100vw; height:100vh; border-radius:0; box-shadow:none; overflow:hidden;">
                                         <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #dcdcde;">
@@ -1462,6 +1644,19 @@ function ichronoz_room_list_shortcode()
     return '<div class="ichronoz"><div data-ichronoz-mount="room-list"></div></div>';
 }
 add_shortcode('ichronoz_room_list', 'ichronoz_room_list_shortcode');
+
+/**
+ * Shortcode: [ichronoz_rooms_carousel]
+ * Renders a compact, independently mounted room-offer carousel.
+ */
+function ichronoz_rooms_carousel_shortcode()
+{
+    ichronoz_enqueue_scripts();
+    do_action('ichronoz_rendered_rooms_carousel');
+
+    return '<div class="ichronoz"><div data-ichronoz-mount="rooms-carousel"></div></div>';
+}
+add_shortcode('ichronoz_rooms_carousel', 'ichronoz_rooms_carousel_shortcode');
 add_action('admin_init', 'ichronoz_register_settings');
 add_action('admin_menu', 'ichronoz_add_settings_page');
 

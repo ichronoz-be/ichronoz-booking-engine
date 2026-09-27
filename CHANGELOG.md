@@ -4,7 +4,18 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
-## [3.1] - 2026-09-26
+## [3.1.1] - 2026-09-27
+
+### Added
+- Added configurable promotion suggestions for eligible API offers, including per-room promotion badges, session-based display limits, dismissal cooldowns, delayed display, and safe promotional HTML rendering.
+- Added the `[ichronoz_rooms_carousel]` shortcode with an independent React mount, availability API service, autoplay controls, dismissible presentation, configurable labels, and viewport positioning.
+- Added WordPress settings for promotion suggestions and the rooms carousel, including shortcode preview support.
+
+### Changed
+- Redesigned the `[ichronoz_room_list]` carousel with availability counts, loading skeletons, empty and error states, updated room cards, clearer pricing and discount details, and improved navigation and responsive styling.
+- Preserved promotion identifiers throughout room and ticket booking URLs.
+
+## [3.1.0] - 2026-09-26
 
 ### Added
 - Added multi-room booking through the `[ichronoz_booking_multi]` shortcode, including combined checkout, guest details, payment selection, tax, and deposit summaries.
