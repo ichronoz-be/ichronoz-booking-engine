@@ -4,6 +4,12 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.1.2] - 2026-09-28
+
+### Changed
+- Updated `[ichronoz_rooms_carousel]` to use the configured primary color consistently for its button, launcher, indicators, focus states, and shadows without relying on delayed JavaScript-generated styles.
+- Updated `[ichronoz_rooms_carousel]` to remain hidden on pages containing `[ichronoz_booking_page]`, `[ichronoz_booking_multi]`, or `[ichronoz_booking]`.
+
 ## [3.1.1] - 2026-09-27
 
 ### Added

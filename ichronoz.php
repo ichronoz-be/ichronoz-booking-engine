@@ -3,7 +3,7 @@
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
- * Version: 3.1.1
+ * Version: 3.1.2
  * Author: iChronoz
  */
 
@@ -206,7 +206,17 @@ function ichronoz_enqueue_scripts()
     );
 
     // Inline critical styles for floating search button to ensure visibility
-    $btn_color = get_option('ichronoz_search_button_color', '#1566d1');
+    $btn_color_raw = get_option('ichronoz_search_button_color', '#1566d1');
+    $btn_color = sanitize_hex_color($btn_color_raw);
+    if (!$btn_color) {
+        $btn_color = '#1566d1';
+    }
+    $btn_color_hex = ltrim($btn_color, '#');
+    $btn_color_rgb = implode(', ', array(
+        hexdec(substr($btn_color_hex, 0, 2)),
+        hexdec(substr($btn_color_hex, 2, 2)),
+        hexdec(substr($btn_color_hex, 4, 2)),
+    ));
     $fab_position = get_option('ichronoz_fab_position', 'bottom-right'); // bottom-right, bottom-left, top-right, top-left
     // Compute positional CSS for wrapper and panel based on setting
     $pos_right = (strpos($fab_position, 'right') !== false);
@@ -216,6 +226,7 @@ function ichronoz_enqueue_scripts()
     $fab_transparent = get_option('ichronoz_fab_transparent', '0') === '1';
     $fab_border_color = get_option('ichronoz_fab_border_color', $btn_color ?: '#1566d1');
     $critical_css =
+        '.ichronoz{--bs-primary:' . $btn_color . ';--bs-primary-rgb:' . $btn_color_rgb . ';}' .
         '.ichronoz-fab-wrapper{position:fixed;' . $wrapper_pos . 'z-index:999999}' .
         ($fab_transparent
             ? '.ichronoz-fab-button{background:transparent !important;color:' . $fab_border_color . ' !important;border:2px solid ' . $fab_border_color . ' !important}'
@@ -1649,8 +1660,34 @@ add_shortcode('ichronoz_room_list', 'ichronoz_room_list_shortcode');
  * Shortcode: [ichronoz_rooms_carousel]
  * Renders a compact, independently mounted room-offer carousel.
  */
+function ichronoz_current_page_has_booking_shortcode()
+{
+    $post = get_post();
+    if (!$post instanceof WP_Post || !is_string($post->post_content)) {
+        return false;
+    }
+
+    $booking_shortcodes = array(
+        'ichronoz_booking_page',
+        'ichronoz_booking_multi',
+        'ichronoz_booking',
+    );
+
+    foreach ($booking_shortcodes as $shortcode) {
+        if (has_shortcode($post->post_content, $shortcode)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function ichronoz_rooms_carousel_shortcode()
 {
+    if (ichronoz_current_page_has_booking_shortcode()) {
+        return '';
+    }
+
     ichronoz_enqueue_scripts();
     do_action('ichronoz_rendered_rooms_carousel');
 
