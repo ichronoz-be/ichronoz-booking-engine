@@ -4,6 +4,16 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.1.3] - 2026-09-28
+
+### Changed
+- Updated booking result tabs to prioritize accommodation types with `serviceTypeFlag="checkin-out"`, then activate the option with the lowest valid nightly price by default, including after a new search.
+
+### Fixed
+- Updated eligible room promo badges to respect the configured minimum searches, minimum time on page, and delay after search while remaining independent from popup dismissal and session-frequency rules.
+- Fixed the collapsed rooms carousel launcher stretching across the viewport or using the wrong edge when configured for a left or top position.
+- Fixed promo badges remaining hidden because searches initiated from the standalone search form were not included in the session search count.
+
 ## [3.1.2] - 2026-09-28
 
 ### Changed

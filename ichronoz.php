@@ -3,7 +3,7 @@
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
- * Version: 3.1.2
+ * Version: 3.1.3
  * Author: iChronoz
  */
 
@@ -943,8 +943,8 @@ function ichronoz_settings_page()
                     </tr>
                     <tr class="ichz-settings-section">
                         <th colspan="2">
-                            <span class="ichz-settings-section__title">Promo suggestion popup</span>
-                            <span class="ichz-settings-section__description">Control when eligible promotion codes returned by the API are suggested to guests.</span>
+                            <span class="ichz-settings-section__title">Promo suggestions</span>
+                            <span class="ichz-settings-section__description">Control when eligible promotion codes returned by the API appear in the popup and room badges.</span>
                         </th>
                     </tr>
                     <tr valign="top">
@@ -956,11 +956,11 @@ function ichronoz_settings_page()
                     </tr>
                     <tr valign="top">
                         <th scope="row"><label for="ichronoz_promo_nudge_minimum_searches">Minimum Searches</label></th>
-                        <td><input id="ichronoz_promo_nudge_minimum_searches" type="number" name="ichronoz_promo_nudge_minimum_searches" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_minimum_searches', 3)); ?>" min="1" max="20" step="1" class="small-text" /><p class="description">User-initiated searches required before showing the popup. Default: <code>3</code>.</p></td>
+                        <td><input id="ichronoz_promo_nudge_minimum_searches" type="number" name="ichronoz_promo_nudge_minimum_searches" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_minimum_searches', 3)); ?>" min="1" max="20" step="1" class="small-text" /><p class="description">User-initiated searches required before showing the popup and room badges. Default: <code>3</code>.</p></td>
                     </tr>
                     <tr valign="top">
                         <th scope="row"><label for="ichronoz_promo_nudge_minimum_seconds">Minimum Time on Page</label></th>
-                        <td><input id="ichronoz_promo_nudge_minimum_seconds" type="number" name="ichronoz_promo_nudge_minimum_seconds" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_minimum_seconds', 30)); ?>" min="0" max="3600" step="1" class="small-text" /> seconds<p class="description">Use <code>0</code> to disable the time requirement.</p></td>
+                        <td><input id="ichronoz_promo_nudge_minimum_seconds" type="number" name="ichronoz_promo_nudge_minimum_seconds" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_minimum_seconds', 30)); ?>" min="0" max="3600" step="1" class="small-text" /> seconds<p class="description">Minimum time before the popup and room badges can appear. Use <code>0</code> to disable the time requirement.</p></td>
                     </tr>
                     <tr valign="top">
                         <th scope="row">Always Show After Minimum Time</th>
@@ -972,7 +972,7 @@ function ichronoz_settings_page()
                     </tr>
                     <tr valign="top">
                         <th scope="row"><label for="ichronoz_promo_nudge_delay_ms">Delay After Search</label></th>
-                        <td><input id="ichronoz_promo_nudge_delay_ms" type="number" name="ichronoz_promo_nudge_delay_ms" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_delay_ms', 800)); ?>" min="0" max="10000" step="100" class="small-text" /> milliseconds<p class="description">Delay after eligible results finish loading. Default: <code>800</code> ms.</p></td>
+                        <td><input id="ichronoz_promo_nudge_delay_ms" type="number" name="ichronoz_promo_nudge_delay_ms" value="<?php echo esc_attr(get_option('ichronoz_promo_nudge_delay_ms', 800)); ?>" min="0" max="10000" step="100" class="small-text" /> milliseconds<p class="description">Delay before the popup and room badges appear after eligible results finish loading. Default: <code>800</code> ms.</p></td>
                     </tr>
                     <tr valign="top">
                         <th scope="row">Show Frequency</th>

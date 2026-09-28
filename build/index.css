@@ -3789,6 +3789,8 @@
   bottom: 24px;
   z-index: 99998;
   display: inline-flex;
+  width: auto;
+  max-width: calc(100vw - 48px);
   align-items: center;
   gap: 9px;
   min-height: 48px;
@@ -3806,6 +3808,23 @@
   cursor: pointer;
   animation: ichzRoomsCarouselLauncherIn 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
   transition: transform 180ms ease, filter 180ms ease, box-shadow 180ms ease;
+}
+
+.ichronoz .ichz-rooms-carousel-launcher.ichz-rooms-carousel--bottom-left {
+  right: auto;
+  left: 24px;
+}
+
+.ichronoz .ichz-rooms-carousel-launcher.ichz-rooms-carousel--top-right {
+  top: 24px;
+  bottom: auto;
+}
+
+.ichronoz .ichz-rooms-carousel-launcher.ichz-rooms-carousel--top-left {
+  top: 24px;
+  right: auto;
+  bottom: auto;
+  left: 24px;
 }
 
 .ichronoz .ichz-rooms-carousel-launcher:hover, .ichronoz .ichz-rooms-carousel-launcher:focus {
