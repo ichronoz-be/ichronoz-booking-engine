@@ -4,6 +4,11 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.1.4] - 2026-10-02
+
+### Changed
+- Updated the two-stage search and booking funnel to preserve the `journey_id` returned by the availability search and send it back with single-room and multi-room booking submissions.
+
 ## [3.1.3] - 2026-09-28
 
 ### Changed
