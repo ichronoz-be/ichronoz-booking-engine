@@ -411,6 +411,7 @@ function ichronoz_enqueue_scripts()
     $booking_data = array(
         'from' => isset($_GET['from']) ? esc_html($_GET['from']) : 'N/A',
         'to' => isset($_GET['to']) ? esc_html($_GET['to']) : 'N/A',
+        'serverToday' => current_time('Y-m-d'),
         'rooms' => isset($_GET['rooms']) ? esc_html($_GET['rooms']) : 'N/A',
         'adults' => isset($_GET['adults']) ? esc_html($_GET['adults']) : 'N/A',
         'children' => isset($_GET['children']) ? esc_html($_GET['children']) : 'N/A',

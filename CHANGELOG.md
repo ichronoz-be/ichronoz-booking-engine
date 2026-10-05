@@ -7,7 +7,7 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 ## [3.1.5] - 2026-10-05
 
 ### Changed
-- Updated booking URL handling to automatically derive `to` from `from` using a one-night default, with both `nite` and `night` supported for specifying the stay duration.
+- Updated booking URL handling to use the WordPress site date when `from` is missing, normalize past `from` dates against that server-provided date, and automatically derive `to` using a one-night default, with both `nite` and `night` supported for specifying the stay duration.
 
 ## [3.1.4] - 2026-10-02
 
