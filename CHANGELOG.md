@@ -4,10 +4,17 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.1.6] - 2026-10-05
+
+### Changed
+- Prevented `to` from being earlier than or equal to `from` by deriving a valid checkout date automatically.
+
 ## [3.1.5] - 2026-10-05
 
 ### Changed
-- Updated booking URL handling to use the WordPress site date when `from` is missing, normalize past `from` dates against that server-provided date, and automatically derive `to` using a one-night default, with both `nite` and `night` supported for specifying the stay duration.
+- Updated booking URL handling to use the WordPress site date when `from` is missing.
+- Normalized past `from` dates against the server-provided WordPress site date.
+- Added support for both `nite` and `night` URL parameters when specifying the stay duration, with a one-night default.
 
 ## [3.1.4] - 2026-10-02
 

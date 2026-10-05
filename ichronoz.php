@@ -3,7 +3,7 @@
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
- * Version: 3.1.5
+ * Version: 3.1.6
  * Author: iChronoz
  */
 
