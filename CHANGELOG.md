@@ -4,6 +4,11 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.1.5] - 2026-10-05
+
+### Changed
+- Updated booking URL handling to automatically derive `to` from `from` using a one-night default, with both `nite` and `night` supported for specifying the stay duration.
+
 ## [3.1.4] - 2026-10-02
 
 ### Changed
