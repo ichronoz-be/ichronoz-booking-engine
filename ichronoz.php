@@ -3,7 +3,7 @@
 /**
  * Plugin Name: iChronoz Booking Engine
  * Description: Intelegent hotel booking engine by iChronoz
- * Version: 3.1.6
+ * Version: 3.1.7
  * Author: iChronoz
  */
 
@@ -27,6 +27,21 @@ function ichronoz_sanitize_room_group_layout($value)
     return in_array($value, array('small-image', 'regular-image', 'compact-table', 'promo-cards'), true)
         ? $value
         : 'small-image';
+}
+
+/**
+ * Sanitize the optional-services presentation used in the booking detail view.
+ *
+ * @param mixed $value Submitted option value.
+ * @return string
+ */
+function ichronoz_sanitize_optional_services_display($value)
+{
+    $value = sanitize_key((string) $value);
+
+    return in_array($value, array('legacy', 'bottom-sheet', 'recommended'), true)
+        ? $value
+        : 'legacy';
 }
 
 /**
@@ -314,6 +329,22 @@ function ichronoz_enqueue_scripts()
         'autoplaySeconds' => ichronoz_sanitize_rooms_carousel_autoplay(get_option('ichronoz_rooms_carousel_autoplay', 5)),
         'dismissible' => get_option('ichronoz_rooms_carousel_dismissible', '1') === '1',
         'position' => ichronoz_sanitize_rooms_carousel_position(get_option('ichronoz_rooms_carousel_position', 'bottom-right')),
+        'showImage' => (bool) absint(get_option('ichronoz_rooms_carousel_show_image', '1')),
+        'showBadge' => (bool) absint(get_option('ichronoz_rooms_carousel_show_badge', '1')),
+        'showTitle' => (bool) absint(get_option('ichronoz_rooms_carousel_show_title', '1')),
+        'showStayPeriod' => (bool) absint(get_option('ichronoz_rooms_carousel_show_stay_period', '1')),
+        'showPrice' => (bool) absint(get_option('ichronoz_rooms_carousel_show_price', '1')),
+        'showScarcity' => (bool) absint(get_option('ichronoz_rooms_carousel_show_scarcity', '1')),
+        'showNeutralAvailability' => (bool) absint(get_option('ichronoz_rooms_carousel_show_neutral_availability', '1')),
+        'showButton' => (bool) absint(get_option('ichronoz_rooms_carousel_show_button', '1')),
+        'showIndicators' => (bool) absint(get_option('ichronoz_rooms_carousel_show_indicators', '1')),
+        'neutralAvailabilityMessages' => array_values(array_filter(array_map(
+            'sanitize_text_field',
+            preg_split('/\r\n|\r|\n/', (string) get_option(
+                'ichronoz_rooms_carousel_neutral_availability_messages',
+                "Availability can change quickly\nAvailable for your selected dates"
+            ))
+        ))),
     );
     $room_group_layout = ichronoz_sanitize_room_group_layout(
         get_option('ichronoz_room_group_layout', 'small-image')
@@ -385,6 +416,10 @@ function ichronoz_enqueue_scripts()
         'roomCardType' => get_option('ichronoz_room_card_type', 'default'),
         'roomGroupLayout' => $room_group_layout,
         'roomDetails' => $grouped_room_details,
+        'autoSearchOnDateApply' => (bool) absint(get_option('ichronoz_auto_search_on_date_apply', '0')),
+        'optionalServicesDisplay' => ichronoz_sanitize_optional_services_display(
+            get_option('ichronoz_optional_services_display', 'legacy')
+        ),
         'secondaryColor' => $secondary_color,
         'successColor' => $success_color,
         'warningColor' => $warning_color,
@@ -430,6 +465,12 @@ function ichronoz_shortcode()
 function ichronoz_register_settings()
 {
     add_option('ichronoz_form_layout', 'vertical');
+    add_option('ichronoz_auto_search_on_date_apply', '0');
+    // One-time correction for installations that received the temporary automatic default.
+    if (get_option('ichronoz_calendar_apply_default_version', '') !== 'manual-v1') {
+        update_option('ichronoz_auto_search_on_date_apply', '0');
+        update_option('ichronoz_calendar_apply_default_version', 'manual-v1');
+    }
     add_option('ichronoz_selected_day_color', '#0071c2');
     add_option('ichronoz_search_button_color', '#1566d1');
     add_option('ichronoz_room_hover_bg_color', '#e6e6e6');
@@ -464,6 +505,7 @@ function ichronoz_register_settings()
     add_option('ichronoz_room_group_layout', 'small-image');
     // Optional sections shown inside each grouped rate card.
     add_option('ichronoz_grouped_room_details', array_keys(ichronoz_get_grouped_room_detail_options()));
+    add_option('ichronoz_optional_services_display', 'legacy');
     add_option('ichronoz_promo_nudge_enabled', '0');
     add_option('ichronoz_promo_nudge_minimum_searches', 3);
     add_option('ichronoz_promo_nudge_minimum_seconds', 30);
@@ -477,9 +519,23 @@ function ichronoz_register_settings()
     add_option('ichronoz_rooms_carousel_autoplay', 5);
     add_option('ichronoz_rooms_carousel_dismissible', '1');
     add_option('ichronoz_rooms_carousel_position', 'bottom-right');
+    add_option('ichronoz_rooms_carousel_show_image', '1');
+    add_option('ichronoz_rooms_carousel_show_badge', '1');
+    add_option('ichronoz_rooms_carousel_show_title', '1');
+    add_option('ichronoz_rooms_carousel_show_stay_period', '1');
+    add_option('ichronoz_rooms_carousel_show_price', '1');
+    add_option('ichronoz_rooms_carousel_show_scarcity', '1');
+    add_option('ichronoz_rooms_carousel_show_neutral_availability', '1');
+    add_option('ichronoz_rooms_carousel_show_button', '1');
+    add_option('ichronoz_rooms_carousel_show_indicators', '1');
+    add_option(
+        'ichronoz_rooms_carousel_neutral_availability_messages',
+        "Availability can change quickly\nAvailable for your selected dates"
+    );
     // Split settings into per-tab groups to prevent cross-tab resets
     // General group
     register_setting('ichronoz_general_group', 'ichronoz_form_layout');
+    register_setting('ichronoz_general_group', 'ichronoz_auto_search_on_date_apply', array('sanitize_callback' => 'absint'));
     register_setting('ichronoz_general_group', 'ichronoz_api_value');
     register_setting('ichronoz_general_group', 'ichronoz_booking_path');
     register_setting('ichronoz_general_group', 'ichronoz_loading_message');
@@ -511,6 +567,20 @@ function ichronoz_register_settings()
     register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_button_label', array('sanitize_callback' => 'sanitize_text_field'));
     register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_autoplay', array('sanitize_callback' => 'ichronoz_sanitize_rooms_carousel_autoplay'));
     register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_dismissible', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_image', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_badge', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_title', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_stay_period', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_price', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_scarcity', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_neutral_availability', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_button', array('sanitize_callback' => 'absint'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_indicators', array('sanitize_callback' => 'absint'));
+    register_setting(
+        'ichronoz_general_group',
+        'ichronoz_rooms_carousel_neutral_availability_messages',
+        array('sanitize_callback' => 'sanitize_textarea_field')
+    );
     register_setting(
         'ichronoz_general_group',
         'ichronoz_rooms_carousel_position',
@@ -527,6 +597,15 @@ function ichronoz_register_settings()
             'type' => 'array',
             'sanitize_callback' => 'ichronoz_sanitize_grouped_room_details',
             'default' => array_keys(ichronoz_get_grouped_room_detail_options()),
+        )
+    );
+    register_setting(
+        'ichronoz_general_group',
+        'ichronoz_optional_services_display',
+        array(
+            'type' => 'string',
+            'sanitize_callback' => 'ichronoz_sanitize_optional_services_display',
+            'default' => 'legacy',
         )
     );
 
@@ -887,6 +966,37 @@ function ichronoz_settings_page()
                             </p>
                         </td>
                     </tr>
+                    <tr valign="top">
+                        <th scope="row">Calendar Apply Behavior
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Choose whether applying a date range immediately starts the search or waits for the Search button.</span>
+                            </span>
+                        </th>
+                        <td>
+                            <?php $auto_search_on_date_apply = (string) absint(get_option('ichronoz_auto_search_on_date_apply', '0')); ?>
+                            <select name="ichronoz_auto_search_on_date_apply" id="ichronoz_auto_search_on_date_apply">
+                                <option value="0" <?php selected($auto_search_on_date_apply, '0'); ?>>Manual — require Search button</option>
+                                <option value="1" <?php selected($auto_search_on_date_apply, '1'); ?>>Automatic — search after Apply</option>
+                            </select>
+                            <p class="description">Default: manual. Automatic mode uses the selected dates and the current room, guest, property, and promo-code values.</p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Optional Services Display
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Choose how optional add-ons are presented on the room booking page.</span>
+                            </span>
+                        </th>
+                        <td>
+                            <?php $optional_services_display = ichronoz_sanitize_optional_services_display(get_option('ichronoz_optional_services_display', 'legacy')); ?>
+                            <select name="ichronoz_optional_services_display" id="ichronoz_optional_services_display">
+                                <option value="legacy" <?php selected($optional_services_display, 'legacy'); ?>>Legacy expanded list (default)</option>
+                                <option value="bottom-sheet" <?php selected($optional_services_display, 'bottom-sheet'); ?>>Compact summary + bottom sheet</option>
+                                <option value="recommended" <?php selected($optional_services_display, 'recommended'); ?>>Recommended services + View all</option>
+                            </select>
+                            <p class="description">Choose between the original expanded list, a compact bottom sheet, or a short recommended-services list.</p>
+                        </td>
+                    </tr>
                     <tr class="ichz-settings-section">
                         <th colspan="2">
                             <span class="ichz-settings-section__title">Floating search button</span>
@@ -1020,6 +1130,46 @@ function ichronoz_settings_page()
                                 <option value="top-left" <?php selected($rooms_carousel_position, 'top-left'); ?>>Top left</option>
                             </select>
                             <p class="description">Controls the viewport position of both the carousel and its collapsed Room Offers button.</p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row">Visible Components
+                            <span class="ichz-help" aria-label="Help"><span class="dashicons dashicons-editor-help"></span>
+                                <span class="ichz-tip">Show or hide individual content inside the Rooms Carousel.</span>
+                            </span>
+                        </th>
+                        <td>
+                            <?php
+                            $rooms_carousel_components = array(
+                                'image' => 'Room image',
+                                'badge' => 'Room offer badge',
+                                'title' => 'Room title',
+                                'stay_period' => 'Stay period',
+                                'price' => 'Starting price',
+                                'scarcity' => 'Scarcity and recent-booking messages',
+                                'neutral_availability' => 'Neutral availability reminder',
+                                'button' => 'Booking button',
+                                'indicators' => 'Slider indicators',
+                            );
+                            ?>
+                            <div class="ichz-checkbox-grid">
+                                <?php foreach ($rooms_carousel_components as $component_key => $component_label): ?>
+                                    <?php $component_option = 'ichronoz_rooms_carousel_show_' . $component_key; ?>
+                                    <label class="ichz-checkbox-option">
+                                        <input type="hidden" name="<?php echo esc_attr($component_option); ?>" value="0" />
+                                        <input type="checkbox" name="<?php echo esc_attr($component_option); ?>" value="1" <?php checked(get_option($component_option, '1'), '1'); ?> />
+                                        <span><?php echo esc_html($component_label); ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                            <p class="description">Urgency uses real allotment or last-booked data. The neutral reminder is controlled separately and appears only when neither signal is available.</p>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_rooms_carousel_neutral_availability_messages">Neutral Availability Messages</label></th>
+                        <td>
+                            <textarea id="ichronoz_rooms_carousel_neutral_availability_messages" name="ichronoz_rooms_carousel_neutral_availability_messages" rows="4" class="large-text"><?php echo esc_textarea(get_option('ichronoz_rooms_carousel_neutral_availability_messages', "Availability can change quickly\nAvailable for your selected dates")); ?></textarea>
+                            <p class="description">Enter one message per line. The carousel randomly displays one non-empty line per room for the current page session. HTML is not allowed. Leave empty to show no neutral reminder text.</p>
                         </td>
                     </tr>
                     <tr class="ichz-settings-section">

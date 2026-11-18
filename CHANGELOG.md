@@ -4,6 +4,19 @@ All notable changes to the Ichronoz plugin will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning when possible.
 
+## [3.1.7] - 2026-11-18
+
+### Added
+- Added configurable optional-service presentations with reusable service selectors, professional quantity controls, collapsible headings, and a view-all flow.
+- Added a responsive booking progress stepper for room, multi-room, and ticket checkout flows.
+- Added configurable Rooms Carousel component visibility, urgency messaging, and editable neutral availability messages.
+
+### Changed
+- Redesigned Personal Detail forms with a single Full Name field while preserving separate first-name and last-name API fields, shared phone validation, integrated returning-guest email search, and improved accessible form controls.
+- Redesigned title, bedding, smoking, payment, preference, and special-request controls for clearer selection states and better mobile usability.
+- Updated the Rooms Carousel to use real allotment and recent-booking signals, show one availability message per room, and follow the configured control corner rounding.
+- Added configurable automatic calendar search while preserving manual search as the default behavior.
+
 ## [3.1.6] - 2026-10-05
 
 ### Changed
