@@ -2203,20 +2203,35 @@
   z-index: 1000000;
   inset: 0;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.56);
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(4px);
+  animation: ichzServicesBackdropIn 180ms ease-out both;
 }
 
 .ichronoz .ichz-services-sheet {
   display: flex;
-  width: min(100%, 720px);
-  max-height: min(88vh, 780px);
+  width: min(100%, 760px);
+  max-height: min(84vh, 760px);
   flex-direction: column;
   overflow: hidden;
-  border-radius: 18px 18px 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: var(--bs-border-radius-lg, 0.75rem);
   background: #fff;
-  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 28px 72px rgba(15, 23, 42, 0.3), 0 8px 24px rgba(15, 23, 42, 0.16);
+  animation: ichzServicesDialogIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes ichzServicesBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ichzServicesDialogIn {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .ichronoz .ichz-services-sheet__header, .ichronoz .ichz-services-sheet__footer {
@@ -2225,7 +2240,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px;
+  padding: 18px 20px;
   background: #fff;
 }
 
@@ -2233,10 +2248,76 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
+.ichronoz .ichz-services-sheet__heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.ichronoz .ichz-services-sheet__heading-icon {
+  display: inline-grid;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  color: var(--bs-primary, #1566d1);
+  background: rgba(var(--bs-primary-rgb, 21, 102, 209), 0.1);
+  border-radius: 50%;
+}
+
+.ichronoz .ichz-services-sheet__eyebrow {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--bs-primary, #1566d1);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ichronoz .ichz-services-sheet__header h5 {
+  font-size: 18px;
+}
+
+.ichronoz .ichz-services-sheet__header p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.ichronoz .ichz-services-sheet__close {
+  display: inline-grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  place-items: center;
+  color: #475569;
+  cursor: pointer;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  transition: color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+.ichronoz .ichz-services-sheet__close:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+  transform: rotate(-4deg);
+}
+
+.ichronoz .ichz-services-sheet__close:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb, 21, 102, 209), 0.2);
+}
+
 .ichronoz .ichz-services-sheet__body {
   overflow-y: auto;
-  padding: 0 16px;
+  padding: 4px 20px;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .ichronoz .ichz-services-sheet__footer {
@@ -2244,15 +2325,38 @@
   border-top: 1px solid #e2e8f0;
 }
 
-.ichronoz .ichz-services-sheet__footer > div {
+.ichronoz .ichz-services-sheet__total {
   display: flex;
   flex-direction: column;
   font-size: 12px;
 }
 
-.ichronoz .ichz-services-sheet__footer strong {
+.ichronoz .ichz-services-sheet__total > span {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ichronoz .ichz-services-sheet__total strong {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   color: #0f172a;
   font-size: 16px;
+}
+
+.ichronoz .ichz-services-sheet__total strong span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ichronoz .ichz-services-sheet__footer .btn {
+  min-height: 44px;
+  padding-left: 20px;
+  padding-right: 20px;
+  font-weight: 700;
 }
 
 @media (max-width: 575.98px) {
@@ -2279,6 +2383,58 @@
     align-items: center;
   }
 
+  .ichronoz .ichz-services-sheet-backdrop {
+    align-items: stretch;
+    padding: 0;
+    background: #fff;
+  }
+
+  .ichronoz .ichz-services-sheet {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    animation: ichzServicesMobileIn 220ms ease-out both;
+  }
+
+  .ichronoz .ichz-services-sheet__header {
+    padding: max(14px, env(safe-area-inset-top)) 16px 14px;
+  }
+
+  .ichronoz .ichz-services-sheet__heading-icon {
+    flex-basis: 38px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .ichronoz .ichz-services-sheet__body {
+    flex: 1 1 auto;
+    padding: 4px 16px;
+  }
+
+  .ichronoz .ichz-services-sheet__footer {
+    gap: 12px;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .ichronoz .ichz-services-sheet__footer .btn {
+    min-width: 148px;
+  }
+
+  @keyframes ichzServicesMobileIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ichronoz .ichz-services-sheet-backdrop, .ichronoz .ichz-services-sheet {
+    animation: none;
+  }
 }
 
 /* Apply Lato font to all plugin content (exclude icon fonts) */
