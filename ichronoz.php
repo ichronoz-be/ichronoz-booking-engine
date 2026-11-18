@@ -115,6 +115,11 @@ function ichronoz_sanitize_rooms_carousel_autoplay($value)
     return max(0, min(60, absint($value)));
 }
 
+function ichronoz_sanitize_rooms_carousel_recent_booking_hours($value)
+{
+    return max(1, min(720, absint($value)));
+}
+
 function ichronoz_sanitize_rooms_carousel_position($value)
 {
     $value = sanitize_key((string) $value);
@@ -327,6 +332,7 @@ function ichronoz_enqueue_scripts()
         'subheading' => sanitize_text_field(get_option('ichronoz_rooms_carousel_subheading', 'Stay period')),
         'buttonLabel' => sanitize_text_field(get_option('ichronoz_rooms_carousel_button_label', 'Book Room Now')),
         'autoplaySeconds' => ichronoz_sanitize_rooms_carousel_autoplay(get_option('ichronoz_rooms_carousel_autoplay', 5)),
+        'recentBookingMaxHours' => ichronoz_sanitize_rooms_carousel_recent_booking_hours(get_option('ichronoz_rooms_carousel_recent_booking_hours', 48)),
         'dismissible' => get_option('ichronoz_rooms_carousel_dismissible', '1') === '1',
         'position' => ichronoz_sanitize_rooms_carousel_position(get_option('ichronoz_rooms_carousel_position', 'bottom-right')),
         'showImage' => (bool) absint(get_option('ichronoz_rooms_carousel_show_image', '1')),
@@ -517,6 +523,7 @@ function ichronoz_register_settings()
     add_option('ichronoz_rooms_carousel_subheading', 'Stay period');
     add_option('ichronoz_rooms_carousel_button_label', 'Book Room Now');
     add_option('ichronoz_rooms_carousel_autoplay', 5);
+    add_option('ichronoz_rooms_carousel_recent_booking_hours', 48);
     add_option('ichronoz_rooms_carousel_dismissible', '1');
     add_option('ichronoz_rooms_carousel_position', 'bottom-right');
     add_option('ichronoz_rooms_carousel_show_image', '1');
@@ -566,6 +573,7 @@ function ichronoz_register_settings()
     register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_subheading', array('sanitize_callback' => 'sanitize_text_field'));
     register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_button_label', array('sanitize_callback' => 'sanitize_text_field'));
     register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_autoplay', array('sanitize_callback' => 'ichronoz_sanitize_rooms_carousel_autoplay'));
+    register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_recent_booking_hours', array('sanitize_callback' => 'ichronoz_sanitize_rooms_carousel_recent_booking_hours'));
     register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_dismissible', array('sanitize_callback' => 'absint'));
     register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_image', array('sanitize_callback' => 'absint'));
     register_setting('ichronoz_general_group', 'ichronoz_rooms_carousel_show_badge', array('sanitize_callback' => 'absint'));
@@ -1114,6 +1122,13 @@ function ichronoz_settings_page()
                     <tr valign="top">
                         <th scope="row"><label for="ichronoz_rooms_carousel_autoplay">Autoplay Interval</label></th>
                         <td><input id="ichronoz_rooms_carousel_autoplay" type="number" name="ichronoz_rooms_carousel_autoplay" value="<?php echo esc_attr(get_option('ichronoz_rooms_carousel_autoplay', 5)); ?>" min="0" max="60" class="small-text" /> seconds<p class="description">Use <code>0</code> to disable automatic sliding.</p></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="ichronoz_rooms_carousel_recent_booking_hours">Recent Booking Window</label></th>
+                        <td>
+                            <input id="ichronoz_rooms_carousel_recent_booking_hours" type="number" name="ichronoz_rooms_carousel_recent_booking_hours" value="<?php echo esc_attr(ichronoz_sanitize_rooms_carousel_recent_booking_hours(get_option('ichronoz_rooms_carousel_recent_booking_hours', 48))); ?>" min="1" max="720" step="1" class="small-text" /> hours
+                            <p class="description">Show the “Booked … ago” message only when <code>lastBookedAt</code> is newer than this value. Default: <code>48</code> hours.</p>
+                        </td>
                     </tr>
                     <tr valign="top">
                         <th scope="row">Close Button</th>
